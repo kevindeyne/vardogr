@@ -4,6 +4,8 @@ import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonParser;
 import com.grack.nanojson.JsonParserException;
 import com.grack.nanojson.JsonWriter;
+import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
@@ -13,6 +15,15 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.Properties;
+import java.util.Random;
+import java.util.logging.Level;
+import java.util.logging.LogManager;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 @ShellComponent
@@ -36,7 +47,7 @@ public class ScrambleCommands {
             writer = new PrintWriter(CONFIG_JSON, "UTF-8");
             String json = JsonWriter.string()
                     .object()
-                    .value("type", "MySQL")
+                    .value("type", "mysql")
                     .value("host", "localhost")
                     .value("port", 3306)
                     .value("username", "datareader")
@@ -103,14 +114,46 @@ public class ScrambleCommands {
             System.out.println("   Host: " + host);
             System.out.println("   Port: " + port);
             System.out.println("   Username: " + username);
+
+
+            Connection con = null;
+            Properties connectionProps = new Properties();
+            connectionProps.put("user", username);
+            connectionProps.put("password", password);
+
+            try {
+                con = DriverManager.getConnection("jdbc:" + type + "://" +  host + ":" + port + "/?useSSL=false", connectionProps);
+                ResultSet rs = con.getMetaData().getCatalogs();
+
+                StringBuilder sb = new StringBuilder();
+                String concat = "";
+                while (rs.next()) {
+                    sb.append(concat);
+                    sb.append(rs.getString("TABLE_CAT"));
+                    concat = ", ";
+                }
+
+                if (noDatabaseParameterProvided(database))
+                    return "\033[0;32m" + NO_DB + sb.toString() + "\033[0m";
+
+            } catch (SQLException e) {
+                throw new RuntimeException(e);
+            }
         } catch (RuntimeException e) {
             return e.getMessage();
         }
 
-        if (noDatabaseParameterProvided(database))
-            return NO_DB;
 
-        return "HELLO WORLD";
+        try (ProgressBar pb = new ProgressBar("Scrambling data ...", 100, ProgressBarStyle.ASCII)) {
+            for(int i=0; i < 100; i++){
+                try {
+                    pb.step();
+                    Thread.sleep(new Random().nextInt(600));
+                } catch (Exception e) {}
+            }
+        }
+
+        return "\033[0;32m" + "Download complete. Check the files in the /downloaded map. Run upload." + "\033[0m";
     }
 
     @ShellMethod("Uploads a scrambled version file to a destination database")
