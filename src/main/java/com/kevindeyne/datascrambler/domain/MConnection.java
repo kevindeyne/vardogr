@@ -28,4 +28,8 @@ public class MConnection {
             throw new RuntimeException(e);
         }
     }
+
+    public Connection getConnection() {
+        return connection;
+    }
 }

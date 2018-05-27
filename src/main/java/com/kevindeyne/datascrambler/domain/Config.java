@@ -23,62 +23,51 @@ public class Config {
         port = obj.getInt("port");
     }
 
-    public MConnection buildConnection(){
+    public MConnection buildConnection(String db){
         Properties connectionProps = new Properties();
         connectionProps.put("user", getUsername());
         connectionProps.put("password", getPassword());
 
         try {
-            Connection con = DriverManager.getConnection("jdbc:" + type + "://" + host + ":" + port + "/?useSSL=false", connectionProps);
+            if(null == db){ db = ""; }
+            String url = "jdbc:" + type + "://" + host + ":" + port + "/" + db + "?useSSL=false";
+            Connection con = DriverManager.getConnection(url, connectionProps);
             return new MConnection(con);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public String getHost() {
-        return host;
+    public MConnection buildConnection(){
+        return buildConnection(null);
     }
 
-    public void setHost(String host) {
-        this.host = host;
+    public String getHost() {
+        return host;
     }
 
     public String getUsername() {
         return username;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
-    }
-
     public String getPassword() {
         return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
     }
 
     public String getType() {
         return type;
     }
 
-    public void setType(String type) {
-        this.type = type;
-    }
-
     public int getPort() {
         return port;
     }
 
-    public void setPort(int port) {
-        this.port = port;
-    }
-
     public void printProps() {
-        System.out.println("   Host: " + getHost());
-        System.out.println("   Port: " + getPort());
-        System.out.println("   Username: " + getUsername());
+        System.out.println();
+        System.out.println("Config: ");
+        System.out.println(" Host: " + getHost());
+        System.out.println(" Port: " + getPort());
+        System.out.println(" Username: " + getUsername());
+        System.out.println();
     }
 }

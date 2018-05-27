@@ -34,7 +34,7 @@ public class ScrambleCommands {
             MConnection con = obj.buildConnection();
             if (noDatabaseParameterProvided(database))
                 return PrintCmds.green(NO_DB + con.getFoundDatabases());
-            Copying.downloadDatabase(con);
+            Copying.downloadDatabase(obj, database);
         } catch (RuntimeException e) {
             return e.getMessage();
         }

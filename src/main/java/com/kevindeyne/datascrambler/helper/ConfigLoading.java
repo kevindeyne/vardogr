@@ -79,8 +79,6 @@ public class ConfigLoading {
      * @return parsed JSONObject or RuntimeException with relevant message
      */
     public static Config getConfigFile() {
-        doesFileExist();
-
         String config = loadConfig();
         JsonObject obj = parseConfig(config);
         return new Config(obj);
