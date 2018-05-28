@@ -46,13 +46,13 @@ public class FKMapping {
     }
 
     public void addTable(String tableName, String columnName){
-        /*if(dependencyMap.get(tableName) == null){
+        if(dependencyMap.get(tableName) == null){
             Dependency dependency = new Dependency();
             dependency.setTable(tableName);
             dependency.setColumn(columnName);
 
             dependencyMap.put(tableName, dependency);
-        }*/
+        }
     }
 
     public void addDependency(String fkTableName, String fkColumnName, String pkTableName, String pkColumnName) {
