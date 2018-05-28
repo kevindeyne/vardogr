@@ -14,8 +14,6 @@ class Scrambler {
         try{
             Class clazz = Class.forName(type);
 
-            //TODO id consistency
-
             if(clazz.equals(Integer.class)){
                 return f.getNumberText(length);
             } else if(clazz.equals(Date.class)){

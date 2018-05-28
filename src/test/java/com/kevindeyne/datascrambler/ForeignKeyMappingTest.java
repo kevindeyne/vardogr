@@ -31,6 +31,25 @@ public class ForeignKeyMappingTest {
     }
 
     @Test
+    public void testColumnMapping(){
+        FKMapping fk = new FKMapping();
+
+        fk.addDependency("order", "person_id", "person", "id");
+        fk.addTable("person", "id");
+
+        List<Dependency> d = new ArrayList<>();
+        d.addAll(fk.dependencyMap.values());
+        d.sort(new DependencyComparator());
+
+        Dependency person = d.get(0);
+        Dependency order = d.get(1);
+
+        Assert.assertEquals("person", person.getTable());
+        Assert.assertEquals("order", order.getTable());
+        Assert.assertEquals( "person_id", person.getParents().get(0).getColumn());
+    }
+
+    @Test
     public void testFullHandling() throws SQLException {
         FKMapping fk = new FKMapping();
 

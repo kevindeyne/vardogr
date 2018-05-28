@@ -125,19 +125,19 @@ public class Copying {
             String scrambleValue;
             String actualValue = rs.getObject(i).toString();
             String columnName = metaData.getColumnName(i);
-            String currentJoined = table + columnName;
+            String currentJoined = String.format("%s.%s", table, columnName);
 
             if(fk.dValueMap.get(currentJoined) != null){
                 scrambleValue = fk.dValueMap.get(currentJoined).get(actualValue);
+                //System.out.println(String.format("# %s exists; for col %s; value is %s", currentJoined, columnName, scrambleValue));
             } else {
                 scrambleValue = scrambleValue(metaData.getColumnClassName(i), metaData.getPrecision(i));
             }
 
             //add child values if required
             if(fkData != null && fkData.getColumn().equals(columnName)) {
-                for(Dependency child : fkData.getChildren()){
-                    String joined = child.getTable()+child.getColumn();
-
+                for(Dependency parent : fkData.getParents()){
+                     String joined = String.format("%s.%s", parent.getTable(), parent.getColumn());
 
                     if(fk.dValueMap.get(joined) != null){
                         fk.dValueMap.get(joined).put(actualValue, scrambleValue);

@@ -10,6 +10,7 @@ public class Dependency {
     Boolean handled = false;
 
     List<Dependency> children = new ArrayList<>();
+    List<Dependency> parents = new ArrayList<>();
 
     public String getTable() {
         return table;
@@ -31,6 +32,8 @@ public class Dependency {
         return children;
     }
 
+    public List<Dependency> getParents() { return parents; }
+
     public Boolean getHandled() {
         return handled;
     }
@@ -41,6 +44,6 @@ public class Dependency {
 
     @Override
     public String toString() {
-        return "{"+table+" depends on:"+children.size()+"}";
+        return "{" + table + " depends on:" + children.size() + "}";
     }
 }
