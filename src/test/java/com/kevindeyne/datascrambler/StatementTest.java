@@ -1,8 +1,8 @@
 package com.kevindeyne.datascrambler;
 
 import com.kevindeyne.datascrambler.domain.Table;
-import com.kevindeyne.datascrambler.helper.Copying;
 import com.kevindeyne.datascrambler.helper.FKMapping;
+import com.kevindeyne.datascrambler.helper.StatementBuilder;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,20 +25,56 @@ public class StatementTest {
     private ResultSetMetaData meta;
 
     @Test
-    public void testInsertString() throws SQLException {
+    public void testBuildStatement() throws SQLException {
         FKMapping fk = new FKMapping();
 
         fk.addTable("person", "id");
-        fk.addDependency("person", "adres_id", "adres", "id");
+        fk.addDependency("person", "adres_id", "adres", "id", 0L);
 
         fk.addTable("post_code", "id");
 
         fk.addTable("order", "id");
-        fk.addDependency("order", "person_id", "person", "id");
-        fk.addDependency("order", "adres_id", "adres", "id");
+        fk.addDependency("order", "person_id", "person", "id", 0L);
+        fk.addDependency("order", "adres_id", "adres", "id", 0L);
 
         fk.addTable("adres", "id");
-        fk.addDependency("adres", "postcode_id", "post_code", "id");
+        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L);
+
+        Assert.assertTrue(fk.hasNext());
+        Assert.assertEquals("post_code", fk.next().getName());
+        Assert.assertTrue(fk.hasNext()); //adres
+
+        Mockito.when(meta.getColumnCount()).thenReturn(2); //id and ref
+        Mockito.when(meta.getColumnName(1)).thenReturn("id");
+        Mockito.when(meta.getColumnTypeName(1)).thenReturn("int");
+        Mockito.when(meta.getPrecision(1)).thenReturn(32);
+
+        Mockito.when(meta.getColumnName(2)).thenReturn("postcode_id");
+        Mockito.when(meta.getColumnTypeName(2)).thenReturn("int");
+        Mockito.when(meta.getPrecision(2)).thenReturn(32);
+
+        Mockito.when(resultSet.getMetaData()).thenReturn(meta);
+
+        String sql = StatementBuilder.buildCreateTableStatement(fk.next(), resultSet, "TEST_DB");
+        System.out.println(sql);
+        Assert.assertTrue(sql.startsWith("CREATE TABLE `TEST_DB`.`adres` (`id` int(32),`postcode_id` int(32),PRIMARY KEY (`id`))"));
+    }
+
+    @Test
+    public void testInsertString() throws SQLException {
+        FKMapping fk = new FKMapping();
+
+        fk.addTable("person", "id");
+        fk.addDependency("person", "adres_id", "adres", "id", 0L);
+
+        fk.addTable("post_code", "id");
+
+        fk.addTable("order", "id");
+        fk.addDependency("order", "person_id", "person", "id", 0L);
+        fk.addDependency("order", "adres_id", "adres", "id", 0L);
+
+        fk.addTable("adres", "id");
+        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L);
 
         Assert.assertTrue(fk.hasNext());
         Assert.assertEquals("post_code", fk.next().getName());
@@ -47,17 +83,13 @@ public class StatementTest {
         Mockito.when(meta.getColumnCount()).thenReturn(2); //id and ref
         Mockito.when(meta.getColumnName(1)).thenReturn("id");
         Mockito.when(meta.getColumnClassName(1)).thenReturn(String.class.getName());
-        Mockito.when(meta.getPrecision(1)).thenReturn(32);
 
         Mockito.when(meta.getColumnName(2)).thenReturn("postcode_id");
         Mockito.when(meta.getColumnClassName(2)).thenReturn(Integer.class.getName());
-        Mockito.when(meta.getPrecision(2)).thenReturn(32);
 
         Mockito.when(resultSet.getMetaData()).thenReturn(meta);
-        Mockito.when(resultSet.getObject(1)).thenReturn("ID-adres");
-        Mockito.when(resultSet.getObject(2)).thenReturn("ID-postcode");
 
-        String sql = Copying.buildInsertStatement(fk.next(), "TEST_DB", resultSet);
+        String sql = StatementBuilder.buildInsertStatement(fk.next(), "TEST_DB", resultSet);
         System.out.println(sql);
         Assert.assertTrue(sql.startsWith("INSERT INTO `TEST_DB`.`adres` VALUES ('"));
     }
@@ -67,16 +99,16 @@ public class StatementTest {
         FKMapping fk = new FKMapping();
 
         fk.addTable("person", "id");
-        fk.addDependency("person", "adres_id", "adres", "id");
+        fk.addDependency("person", "adres_id", "adres", "id", 0L);
 
         fk.addTable("post_code", "id");
 
         fk.addTable("order", "id");
-        fk.addDependency("order", "person_id", "person", "id");
-        fk.addDependency("order", "adres_id", "adres", "id");
+        fk.addDependency("order", "person_id", "person", "id", 0L);
+        fk.addDependency("order", "adres_id", "adres", "id", 0L);
 
         fk.addTable("adres", "id");
-        fk.addDependency("adres", "postcode_id", "post_code", "id");
+        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L);
 
         Assert.assertTrue(fk.hasNext());
         Assert.assertEquals("post_code", fk.next().getName());
@@ -85,17 +117,13 @@ public class StatementTest {
         Mockito.when(meta.getColumnCount()).thenReturn(2); //id and ref
         Mockito.when(meta.getColumnName(1)).thenReturn("id");
         Mockito.when(meta.getColumnClassName(1)).thenReturn(Integer.class.getName());
-        Mockito.when(meta.getPrecision(1)).thenReturn(32);
 
         Mockito.when(meta.getColumnName(2)).thenReturn("postcode_id");
         Mockito.when(meta.getColumnClassName(2)).thenReturn(Integer.class.getName());
-        Mockito.when(meta.getPrecision(2)).thenReturn(32);
 
         Mockito.when(resultSet.getMetaData()).thenReturn(meta);
-        Mockito.when(resultSet.getObject(1)).thenReturn(3243);
-        Mockito.when(resultSet.getObject(2)).thenReturn("ID-postcode");
 
-        String sql = Copying.buildInsertStatement(fk.next(), "TEST_DB", resultSet);
+        String sql = StatementBuilder.buildInsertStatement(fk.next(), "TEST_DB", resultSet);
         System.out.println(sql);
         Assert.assertTrue(sql.startsWith("INSERT INTO `TEST_DB`.`adres` VALUES ("));
         Assert.assertNotEquals(sql.replace("INSERT INTO `TEST_DB`.`adres` VALUES (", "").substring(0,1), "'");
@@ -106,16 +134,16 @@ public class StatementTest {
         FKMapping fk = new FKMapping();
 
         fk.addTable("person", "id");
-        fk.addDependency("person", "adres_id", "adres", "id");
+        fk.addDependency("person", "adres_id", "adres", "id", 0L);
 
         fk.addTable("post_code", "id");
 
         fk.addTable("order", "id");
-        fk.addDependency("order", "person_id", "person", "id");
-        fk.addDependency("order", "adres_id", "adres", "id");
+        fk.addDependency("order", "person_id", "person", "id", 0L);
+        fk.addDependency("order", "adres_id", "adres", "id", 0L);
 
         fk.addTable("adres", "id");
-        fk.addDependency("adres", "postcode_id", "post_code", "id");
+        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L);
 
         Assert.assertTrue(fk.hasNext());
         Assert.assertEquals("post_code", fk.next().getName());
@@ -127,9 +155,8 @@ public class StatementTest {
         Mockito.when(meta.getPrecision(1)).thenReturn(10);
 
         Mockito.when(resultSet.getMetaData()).thenReturn(meta);
-        Mockito.when(resultSet.getObject(1)).thenReturn(new Date(123));
 
-        String sql = Copying.buildInsertStatement(fk.next(), "TEST_DB", resultSet);
+        String sql = StatementBuilder.buildInsertStatement(fk.next(), "TEST_DB", resultSet);
         System.out.println(sql);
         Assert.assertTrue(sql.startsWith("INSERT INTO `TEST_DB`.`adres` VALUES ('"));
     }
@@ -139,16 +166,16 @@ public class StatementTest {
         FKMapping fk = new FKMapping();
 
         fk.addTable("person", "id");
-        fk.addDependency("person", "adres_id", "adres", "id");
+        fk.addDependency("person", "adres_id", "adres", "id", 0L);
 
         fk.addTable("post_code", "id");
 
         fk.addTable("order", "id");
-        fk.addDependency("order", "person_id", "person", "id");
-        fk.addDependency("order", "adres_id", "adres", "id");
+        fk.addDependency("order", "person_id", "person", "id", 0L);
+        fk.addDependency("order", "adres_id", "adres", "id", 0L);
 
         fk.addTable("adres", "id");
-        fk.addDependency("adres", "postcode_id", "post_code", "id");
+        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L);
 
         Table postcode = fk.next();
         Assert.assertTrue(fk.hasNext());
@@ -157,11 +184,9 @@ public class StatementTest {
         Mockito.when(meta.getColumnCount()).thenReturn(1); //id and ref
         Mockito.when(meta.getColumnName(1)).thenReturn("id");
         Mockito.when(meta.getColumnClassName(1)).thenReturn(Integer.class.getName());
-        Mockito.when(meta.getPrecision(1)).thenReturn(32);
         Mockito.when(resultSet.getMetaData()).thenReturn(meta);
-        Mockito.when(resultSet.getObject(1)).thenReturn(123);
 
-        String sql = Copying.buildInsertStatement(postcode, "DB", resultSet);
+        String sql = StatementBuilder.buildInsertStatement(postcode, "DB", resultSet);
 
         Assert.assertTrue(fk.hasNext());
         Table adres = fk.next();
@@ -171,17 +196,13 @@ public class StatementTest {
         Mockito.when(meta.getColumnCount()).thenReturn(2); //id and ref
         Mockito.when(meta.getColumnName(1)).thenReturn("id");
         Mockito.when(meta.getColumnClassName(1)).thenReturn(Integer.class.getName());
-        Mockito.when(meta.getPrecision(1)).thenReturn(32);
-        Mockito.when(resultSet.getObject(1)).thenReturn(555555);
 
         Mockito.when(meta.getColumnName(2)).thenReturn("postcode_id");
         Mockito.when(meta.getColumnClassName(2)).thenReturn(Integer.class.getName());
-        Mockito.when(meta.getPrecision(2)).thenReturn(32);
-        Mockito.when(resultSet.getObject(2)).thenReturn(123);
 
         Mockito.when(resultSet.getMetaData()).thenReturn(meta);
 
-        String sql2 = Copying.buildInsertStatement(adres, "DB", resultSet);
+        String sql2 = StatementBuilder.buildInsertStatement(adres, "DB", resultSet);
 
         String idA = sql.substring(sql.indexOf("(")+1, sql.indexOf(")"));
         String idB = sql2.substring(sql2.indexOf(",")+1, sql2.indexOf(")"));
