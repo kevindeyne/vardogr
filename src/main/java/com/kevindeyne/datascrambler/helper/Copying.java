@@ -1,16 +1,11 @@
 package com.kevindeyne.datascrambler.helper;
 
 import com.kevindeyne.datascrambler.domain.Config;
-import com.kevindeyne.datascrambler.domain.Dependency;
 import com.kevindeyne.datascrambler.domain.MConnection;
 import com.kevindeyne.datascrambler.domain.Table;
-import org.springframework.util.CollectionUtils;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Collection;
 
 import static com.kevindeyne.datascrambler.helper.Scrambler.scrambleValue;
 
@@ -119,12 +114,10 @@ public class Copying {
         for (int i = 1; i < colCount; i++) {
             String scrambleValue;
             String columnName = metaData.getColumnName(i);
-
-            //TODO if link
-            scrambleValue = scrambleValue(metaData.getColumnClassName(i), metaData.getPrecision(i));
-
-
             String actualValue = rs.getObject(i).toString();
+
+            //TODO if link DB call, dont store values
+            scrambleValue = scrambleValue(metaData.getColumnClassName(i), metaData.getPrecision(i));
 
             sb.append(concat);
             sb.append(scrambleValue);
@@ -162,9 +155,9 @@ public class Copying {
         return sb.toString();
     }
 
-    private static String buildPrimaryKeys(List<String> keys){
+    private static String buildPrimaryKeys(Collection<String> keys){
         if(keys.size() == 1) {
-            return keys.get(0);
+            return keys.iterator().next();
         } else {
             StringBuilder sb = new StringBuilder();
             String appender = "";

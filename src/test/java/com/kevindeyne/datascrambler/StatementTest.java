@@ -135,7 +135,7 @@ public class StatementTest {
     }
 
     @Test
-    public void testIDConsistency() throws SQLException { //TODO
+    public void testIDConsistency() throws SQLException {
         FKMapping fk = new FKMapping();
 
         fk.addTable("person", "id");
