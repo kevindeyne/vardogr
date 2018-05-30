@@ -6,11 +6,11 @@ import java.sql.Date;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
-class Scrambler {
+public class Scrambler {
 
     private static DataFactory f = new DataFactory();
 
-    static String consistentValue(String type, Integer rowNr, Long max, Long tableSize, boolean nullable){
+    static String consistentValue(String type, Integer rowNr, Long max, Long tableSize, boolean nullable){ //TODO use max to calculate fill rate and simulate
         if(rowNr > tableSize) {
             if(nullable){
                 return "NULL";
@@ -52,14 +52,18 @@ class Scrambler {
         }
     }
 
-    private static String getRandomText(Integer length) {
+    public static String getRandomText(Integer length) {
         String result;
-        if(length > 20){
-            int length2 = length-2;
-            result = String.format("%s %s %s", f.getRandomText(1, length2/3), f.getRandomText(1, length2/3), f.getRandomText(1, length2/3));
-        } else  if(length > 10){
-            int length2 = length-1;
-            result = String.format("%s %s", f.getRandomText(1, length2/2), f.getRandomText(1, length2/2));
+
+        int div = length/10;
+        if(length > 10){
+            int length2 = length-div;
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < div; i++) {
+                sb.append(f.getRandomText(1, length2/div));
+                sb.append(" ");
+            }
+            result = sb.toString();
         } else {
             result = f.getRandomText(1, length);
         }
