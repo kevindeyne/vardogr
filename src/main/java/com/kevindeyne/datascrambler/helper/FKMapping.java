@@ -38,11 +38,11 @@ public class FKMapping {
         return table;
     }
 
-    public ForeignKey addDependency(String referencingTableName, String referencingKey, String referencedTableName, String referencedKey, Long amountOfFKs) {
+    public ForeignKey addDependency(String referencingTableName, String referencingKey, String referencedTableName, String referencedKey, Long amountOfFKs, Long tableSize) {
         Table referencingTable = addTable(referencingTableName);
         Table referencedTable = addTable(referencedTableName, referencedKey);
 
-        ForeignKey fk = new ForeignKey(referencedTable, referencingKey, amountOfFKs);
+        ForeignKey fk = new ForeignKey(referencedTable, referencingKey, amountOfFKs, tableSize);
         referencingTable.getFks().add(fk);
         return fk;
     }

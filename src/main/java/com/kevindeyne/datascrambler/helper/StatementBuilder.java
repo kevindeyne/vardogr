@@ -3,6 +3,7 @@ package com.kevindeyne.datascrambler.helper;
 import com.kevindeyne.datascrambler.domain.ForeignKey;
 import com.kevindeyne.datascrambler.domain.Table;
 
+import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -27,12 +28,13 @@ public class StatementBuilder {
             String columnName = metaData.getColumnName(i);
 
             if(table.getPks().contains(columnName)){
-                scrambleValue = Scrambler.consistentValue(metaData.getColumnClassName(i), rs.getRow());
+                scrambleValue = Scrambler.consistentValue(metaData.getColumnClassName(i), rs.getRow(), Long.MAX_VALUE, Long.MAX_VALUE, false);
             }
 
             for(ForeignKey fk : table.getFks()){
                 if(fk.getVia().equals(columnName)){
-                    scrambleValue = Scrambler.consistentValue(metaData.getColumnClassName(i), rs.getRow());
+                    Boolean nullable = metaData.isNullable(i) == ResultSetMetaData.columnNullable;
+                    scrambleValue = Scrambler.consistentValue(metaData.getColumnClassName(i), rs.getRow(), fk.getFkCount(), fk.getTableSize(), nullable);
                     break;
                 }
             }
@@ -75,5 +77,10 @@ public class StatementBuilder {
 
         sb.append(String.format(") ENGINE=%s DEFAULT CHARSET=%s COLLATE=%s;", ENGINE, CHARSET, COLLATE));
         return sb.toString();
+    }
+
+    public static String buildFKStatement(Table table, ForeignKey key, String db) {
+        String refPrimKey = KeyBuilder.buildPrimaryKeys(key.getTable().getPks());
+        return String.format("ALTER TABLE `%s`.`%s` ADD FOREIGN KEY (`%s`) REFERENCES `%s`(`%s`);", db, table.getName(), key.getVia(), key.getTable().getName(), refPrimKey);
     }
 }

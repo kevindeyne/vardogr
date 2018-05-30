@@ -34,7 +34,9 @@ class KeyBuilder {
             String pkColumnName = foreignKeys.getString("PKCOLUMN_NAME");
 
             Long amountOfCouplings = Copying.countFKs(connection, db, fkTableName, fkColumnName, pkTableName, pkColumnName);
-            Copying.fk.addDependency(fkTableName, fkColumnName, pkTableName, pkColumnName, amountOfCouplings);
+            Long tableSize = Copying.countTableSize(connection, db, pkTableName);
+
+            Copying.fk.addDependency(fkTableName, fkColumnName, pkTableName, pkColumnName, amountOfCouplings, tableSize);
         }
     }
 

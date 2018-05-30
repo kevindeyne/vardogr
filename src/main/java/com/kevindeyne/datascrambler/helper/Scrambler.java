@@ -10,7 +10,15 @@ class Scrambler {
 
     private static DataFactory f = new DataFactory();
 
-    static String consistentValue(String type, Integer rowNr){
+    static String consistentValue(String type, Integer rowNr, Long max, Long tableSize, boolean nullable){
+        if(rowNr > tableSize) {
+            if(nullable){
+                return "NULL";
+            } else {
+              rowNr = (int)(Math.random() * (tableSize.intValue())) + 1;
+            }
+        }
+
         try{
             Class clazz = Class.forName(type);
 

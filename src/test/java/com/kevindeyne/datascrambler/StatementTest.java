@@ -29,16 +29,16 @@ public class StatementTest {
         FKMapping fk = new FKMapping();
 
         fk.addTable("person", "id");
-        fk.addDependency("person", "adres_id", "adres", "id", 0L);
+        fk.addDependency("person", "adres_id", "adres", "id", 0L, 0L);
 
         fk.addTable("post_code", "id");
 
         fk.addTable("order", "id");
-        fk.addDependency("order", "person_id", "person", "id", 0L);
-        fk.addDependency("order", "adres_id", "adres", "id", 0L);
+        fk.addDependency("order", "person_id", "person", "id", 0L, 0L);
+        fk.addDependency("order", "adres_id", "adres", "id", 0L, 0L);
 
         fk.addTable("adres", "id");
-        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L);
+        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L, 0L);
 
         Assert.assertTrue(fk.hasNext());
         Assert.assertEquals("post_code", fk.next().getName());
@@ -65,16 +65,16 @@ public class StatementTest {
         FKMapping fk = new FKMapping();
 
         fk.addTable("person", "id");
-        fk.addDependency("person", "adres_id", "adres", "id", 0L);
+        fk.addDependency("person", "adres_id", "adres", "id", 0L, 0L);
 
         fk.addTable("post_code", "id");
 
         fk.addTable("order", "id");
-        fk.addDependency("order", "person_id", "person", "id", 0L);
-        fk.addDependency("order", "adres_id", "adres", "id", 0L);
+        fk.addDependency("order", "person_id", "person", "id", 0L, 0L);
+        fk.addDependency("order", "adres_id", "adres", "id", 0L, 0L);
 
         fk.addTable("adres", "id");
-        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L);
+        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L, 0L);
 
         Assert.assertTrue(fk.hasNext());
         Assert.assertEquals("post_code", fk.next().getName());
@@ -99,16 +99,16 @@ public class StatementTest {
         FKMapping fk = new FKMapping();
 
         fk.addTable("person", "id");
-        fk.addDependency("person", "adres_id", "adres", "id", 0L);
+        fk.addDependency("person", "adres_id", "adres", "id", 0L, 0L);
 
         fk.addTable("post_code", "id");
 
         fk.addTable("order", "id");
-        fk.addDependency("order", "person_id", "person", "id", 0L);
-        fk.addDependency("order", "adres_id", "adres", "id", 0L);
+        fk.addDependency("order", "person_id", "person", "id", 0L, 0L);
+        fk.addDependency("order", "adres_id", "adres", "id", 0L, 0L);
 
         fk.addTable("adres", "id");
-        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L);
+        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L, 0L);
 
         Assert.assertTrue(fk.hasNext());
         Assert.assertEquals("post_code", fk.next().getName());
@@ -134,16 +134,16 @@ public class StatementTest {
         FKMapping fk = new FKMapping();
 
         fk.addTable("person", "id");
-        fk.addDependency("person", "adres_id", "adres", "id", 0L);
+        fk.addDependency("person", "adres_id", "adres", "id", 0L, 0L);
 
         fk.addTable("post_code", "id");
 
         fk.addTable("order", "id");
-        fk.addDependency("order", "person_id", "person", "id", 0L);
-        fk.addDependency("order", "adres_id", "adres", "id", 0L);
+        fk.addDependency("order", "person_id", "person", "id", 0L, 0L);
+        fk.addDependency("order", "adres_id", "adres", "id", 0L, 0L);
 
         fk.addTable("adres", "id");
-        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L);
+        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L, 0L);
 
         Assert.assertTrue(fk.hasNext());
         Assert.assertEquals("post_code", fk.next().getName());
@@ -166,16 +166,16 @@ public class StatementTest {
         FKMapping fk = new FKMapping();
 
         fk.addTable("person", "id");
-        fk.addDependency("person", "adres_id", "adres", "id", 0L);
+        fk.addDependency("person", "adres_id", "adres", "id", 0L, 0L);
 
         fk.addTable("post_code", "id");
 
         fk.addTable("order", "id");
-        fk.addDependency("order", "person_id", "person", "id", 0L);
-        fk.addDependency("order", "adres_id", "adres", "id", 0L);
+        fk.addDependency("order", "person_id", "person", "id", 0L, 0L);
+        fk.addDependency("order", "adres_id", "adres", "id", 0L, 0L);
 
         fk.addTable("adres", "id");
-        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L);
+        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L, 0L);
 
         Table postcode = fk.next();
         Assert.assertTrue(fk.hasNext());

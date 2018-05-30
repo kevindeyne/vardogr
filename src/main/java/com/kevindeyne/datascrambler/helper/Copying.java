@@ -1,6 +1,7 @@
 package com.kevindeyne.datascrambler.helper;
 
 import com.kevindeyne.datascrambler.domain.Config;
+import com.kevindeyne.datascrambler.domain.ForeignKey;
 import com.kevindeyne.datascrambler.domain.MConnection;
 import com.kevindeyne.datascrambler.domain.Table;
 
@@ -12,6 +13,7 @@ public class Copying {
 
     public static void downloadDatabase(Config obj, String db) {
         try {
+            fk = new FKMapping();
             MConnection mConnection = obj.buildConnection(db);
             loadKeysForTables(mConnection.getConnection(), db);
 
@@ -70,6 +72,12 @@ public class Copying {
                         String insert = StatementBuilder.buildInsertStatement(table, db, rs);
                         System.out.println(insert);
                     }
+
+                    for(ForeignKey key : table.getFks()){
+                        String addFK = StatementBuilder.buildFKStatement(table, key, db);
+                        System.out.println();
+                        System.out.println(addFK);
+                    }
                 }
             }
         }
@@ -78,5 +86,18 @@ public class Copying {
         }
 
         //throw new RuntimeException("Stopping");
+    }
+
+    public static Long countTableSize(Connection connection, String db, String tableName) {
+        String countSql = "SELECT count(*) FROM `%s`.`%s`";
+        countSql = String.format(countSql, db, tableName);
+        try (PreparedStatement selectStmt = connection.prepareStatement(countSql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY); ResultSet rs = selectStmt.executeQuery()) {
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (SQLException e){
+            e.printStackTrace();
+        }
+        return -1L;
     }
 }
