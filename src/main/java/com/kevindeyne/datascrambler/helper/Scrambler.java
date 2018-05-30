@@ -16,11 +16,11 @@ class Scrambler {
 
             if(clazz.equals(Integer.class)){
                 return f.getNumberText(length);
-            } else if(clazz.equals(Date.class)){
-                return f.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().format(DateTimeFormatter.ISO_DATE);
+            } else if(clazz.equals(Date.class) || clazz.equals(java.util.Date.class)){
+                return String.format("'%s'", f.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().format(DateTimeFormatter.ISO_DATE));
             }
 
-            return f.getRandomWord(length, false);
+            return String.format("'%s'", f.getRandomWord(length, false));
         }catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }

@@ -3,6 +3,7 @@ package com.kevindeyne.datascrambler.helper;
 import com.kevindeyne.datascrambler.domain.Config;
 import com.kevindeyne.datascrambler.domain.Dependency;
 import com.kevindeyne.datascrambler.domain.MConnection;
+import com.kevindeyne.datascrambler.domain.Table;
 import org.springframework.util.CollectionUtils;
 
 import java.sql.*;
@@ -23,52 +24,50 @@ public class Copying {
 
     public static void downloadDatabase(Config obj, String db) {
         try {
-            MConnection con = obj.buildConnection(db);
-            Connection connection = con.getConnection();
-            DatabaseMetaData md = connection.getMetaData();
-            String catalog = connection.getCatalog();
-            String schema = connection.getSchema();
+            MConnection mConnection = obj.buildConnection(db);
+            loadKeysForTables(mConnection.getConnection());
 
-            ResultSet rs = getAllTables(md, catalog, schema);
-            while (rs.next()) {
-                String tableName = getTableName(rs);
-                fk.keys.put(tableName, Copying.getKeys(md, tableName, catalog, schema));
+            while(fk.hasNext()){
+                Copying.getData(mConnection, fk.next(), db);
             }
-
-            fk.handleDependenciesWithNoChildren(con, db);
         } catch(SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
+    private static void loadKeysForTables(Connection connection) throws SQLException {
+        DatabaseMetaData md = connection.getMetaData();
+        String catalog = connection.getCatalog();
+        String schema = connection.getSchema();
+
+        ResultSet rs = getAllTables(md, catalog, schema);
+        while (rs.next()) {
+            Copying.getKeys(md, getTableName(rs), catalog, schema);
+        }
+    }
+
     private static ResultSet getAllTables(DatabaseMetaData md, String catalog, String schema) throws SQLException {
-        return md.getTables(null, null, "%", null);
+        return md.getTables(catalog, schema, "%", null);
     }
 
     private static String getTableName(ResultSet rs) throws SQLException {
-        String table = rs.getString(3);
-        return table;
+        return rs.getString(3);
     }
 
-    protected static List<String> getKeys(DatabaseMetaData md, String table, String catalog, String schema) throws SQLException {
-        List<String> primKeys = new ArrayList<>();
-        ResultSet primaryKeys = md.getPrimaryKeys( catalog , schema , table );
+    private static void getKeys(DatabaseMetaData md, String table, String catalog, String schema) throws SQLException {
+        ResultSet primaryKeys = md.getPrimaryKeys(catalog, schema, table);
         while(primaryKeys.next()) {
             ResultSetMetaData metaData = primaryKeys.getMetaData();
 
             for (int i = 1; i < metaData.getColumnCount() + 1; i++) {
                 String colName = metaData.getColumnName(i);
                 if(colName.contains("COL")){
-                    String primKeyColName = primaryKeys.getObject(i).toString();
-                    primKeys.add(primKeyColName);
-                    fk.addTable(table, primKeyColName);
+                    fk.addTable(table, primaryKeys.getObject(i).toString());
                 }
             }
         }
 
         loadFKs(md, table, catalog, schema);
-
-        return primKeys;
     }
 
     private static void loadFKs(DatabaseMetaData md, String table, String catalog, String schema) throws SQLException {
@@ -83,10 +82,8 @@ public class Copying {
         }
     }
 
-    protected static void getData(MConnection con, String table, String db, List<String> keys){
+    private static void getData(MConnection con, Table table, String db){
         try {
-            boolean noKeys = CollectionUtils.isEmpty(keys);
-
             String selectAll = String.format("SELECT * FROM `%s`.`%s`", db, table);
             try (PreparedStatement selectStmt = con.getConnection().prepareStatement(selectAll, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY); ResultSet rs = selectStmt.executeQuery()) {
                 if (!rs.isBeforeFirst()) {
@@ -95,11 +92,11 @@ public class Copying {
                     String createQuery = null;
                     while (rs.next()) {
                         if (createQuery == null) {
-                            createQuery = buildCreateTableStatement(table, keys, noKeys, rs);
+                            createQuery = buildCreateTableStatement(table, rs);
                             System.out.println(createQuery);
                         }
 
-                        buildInsertStatement(table, db, rs, keys);
+                        buildInsertStatement(table, db, rs);
                     }
                 }
             }
@@ -111,44 +108,23 @@ public class Copying {
         //throw new RuntimeException("Stopping");
     }
 
-    private static void buildInsertStatement(String table, String db, ResultSet rs, List<String> keys) throws SQLException {
-        Dependency fkData = fk.dependencyMap.get(table);
-
+    public static String buildInsertStatement(Table table, String db, ResultSet rs) throws SQLException {
         StringBuilder sb = new StringBuilder();
 
         ResultSetMetaData metaData = rs.getMetaData();
         int colCount = metaData.getColumnCount() + 1;
 
-        sb.append(String.format("INSERT INTO `%s`.`%s` VALUES (", db, table));
+        sb.append(String.format("INSERT INTO `%s`.`%s` VALUES (", db, table.getName()));
         String concat = "";
         for (int i = 1; i < colCount; i++) {
             String scrambleValue;
-            String actualValue = rs.getObject(i).toString();
             String columnName = metaData.getColumnName(i);
-            String currentJoined = String.format("%s.%s", table, columnName);
 
-            if(fk.dValueMap.get(currentJoined) != null){
-                scrambleValue = fk.dValueMap.get(currentJoined).get(actualValue);
-                //System.out.println(String.format("# %s exists; for col %s; value is %s", currentJoined, columnName, scrambleValue));
-            } else {
-                scrambleValue = scrambleValue(metaData.getColumnClassName(i), metaData.getPrecision(i));
-            }
+            //TODO if link
+            scrambleValue = scrambleValue(metaData.getColumnClassName(i), metaData.getPrecision(i));
 
-            //add child values if required
-            if(fkData != null && fkData.getColumn().equals(columnName)) {
-                for(Dependency parent : fkData.getParents()){
-                     String joined = String.format("%s.%s", parent.getTable(), parent.getColumn());
 
-                    if(fk.dValueMap.get(joined) != null){
-                        fk.dValueMap.get(joined).put(actualValue, scrambleValue);
-                    } else {
-                        Map<String, String> valueMap = new HashMap<>();
-                        valueMap.put(actualValue, scrambleValue);
-                        fk.dValueMap.put(joined, valueMap);
-                    }
-                }
-            }
-            //---
+            String actualValue = rs.getObject(i).toString();
 
             sb.append(concat);
             sb.append(scrambleValue);
@@ -156,15 +132,16 @@ public class Copying {
         }
         sb.append(");");
 
-        System.out.println(sb.toString());
+        return sb.toString();
     }
 
-    private static String buildCreateTableStatement(String table, List<String> keys, boolean noKeys, ResultSet rs) throws SQLException {
+    private static String buildCreateTableStatement(Table table, ResultSet rs) throws SQLException {
         StringBuilder sb = new StringBuilder();
         ResultSetMetaData metaData = rs.getMetaData();
         int colCount = metaData.getColumnCount() + 1;
 
-        sb.append(String.format("CREATE TABLE `%s` (", table));
+        Boolean noKeys = table.getPks().isEmpty();
+        sb.append(String.format("CREATE TABLE `%s` (", table.getName()));
         for (int i = 1; i < colCount; i++) {
             String label = metaData.getColumnName(i);
             String type = metaData.getColumnTypeName(i);
@@ -177,7 +154,7 @@ public class Copying {
         }
 
         if (!noKeys) {
-            String primKey = buildPrimaryKeys(table, keys);
+            String primKey = buildPrimaryKeys(table.getPks());
             sb.append(String.format("PRIMARY KEY (`%s`)", primKey));
         }
 
@@ -185,7 +162,7 @@ public class Copying {
         return sb.toString();
     }
 
-    private static String buildPrimaryKeys(String table, List<String> keys){
+    private static String buildPrimaryKeys(List<String> keys){
         if(keys.size() == 1) {
             return keys.get(0);
         } else {

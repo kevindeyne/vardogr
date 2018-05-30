@@ -1,84 +1,71 @@
 package com.kevindeyne.datascrambler.helper;
 
-import com.kevindeyne.datascrambler.domain.Dependency;
-import com.kevindeyne.datascrambler.domain.MConnection;
+import com.kevindeyne.datascrambler.domain.ForeignKey;
+import com.kevindeyne.datascrambler.domain.Table;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
 public class FKMapping {
 
-    public Map<String, Dependency> dependencyMap = new HashMap<>();
-    Map<String, Map<String, String>> dValueMap = new HashMap<>();
-    Map<String, List<String>> keys = new HashMap<>();
+    private List<Table> loaded;
+    private List<Table> handled;
 
-    public void handleDependenciesWithNoChildren(MConnection con, String db) {
-        int handled = 0;
+    public FKMapping(){
+        loaded = new ArrayList<>();
+        handled = new ArrayList<>();
+    }
 
-        List<Dependency> values = new ArrayList<>(dependencyMap.values());
-        for(Dependency dep : values){
-            if(!dep.getHandled()){
-                int countChildren = 0;
-                for(Dependency child : dep.getChildren()){
-                    if(!child.getHandled()){
-                        countChildren++;
-                    }
+    public Table addTable(String tableName, String ... columnNames){
+        Table table = new Table(tableName);
+
+        int index = Collections.binarySearch(loaded, table, Comparator.comparing(Table::getName));
+        if(index < 0){
+            if(columnNames != null){
+                for(String columnName : columnNames) {
+                    table.getPks().add(columnName);
                 }
+            }
 
-                if(countChildren == 0) {
-                    String table = dep.getTable();
+            loaded.add(table);
+            Collections.sort(loaded, Comparator.comparing(Table::getName));
+        } else {
+            return loaded.get(index);
+        }
 
-                    System.out.println();
-                    System.out.println("Downloading: " + table);
-                    if(con.getConnection() != null)
-                        Copying.getData(con, table, db, keys.get(table));
+        return table;
+    }
 
-                    dependencyMap.get(table).setHandled(true);
-                    handled++;
+    public ForeignKey addDependency(String referencingTableName, String referencingKey, String referencedTableName, String referencedKey) {
+        Table referencingTable = addTable(referencingTableName);
+        Table referencedTable = addTable(referencedTableName, referencedKey);
+
+        ForeignKey fk = new ForeignKey(referencedTable, referencingKey);
+        referencingTable.getFks().add(fk);
+        return fk;
+    }
+
+    public Table next() {
+        if(handled.isEmpty()){
+            Collections.sort(loaded, Comparator.comparing(t -> t.getFks().size()));
+            Table first = loaded.get(0);
+            handled.add(first);
+            return first;
+        } else {
+            for(Table loadedTable : loaded){
+                if(!handled.contains(loadedTable)){
+                    handled.add(loadedTable);
+                    return loadedTable;
                 }
             }
         }
 
-        if(handled > 0)
-            handleDependenciesWithNoChildren(con, db);
+        return null;
     }
 
-    public void addTable(String tableName, String columnName){
-        if(dependencyMap.get(tableName) == null){
-            Dependency dependency = new Dependency();
-            dependency.setTable(tableName);
-            dependency.setColumn(columnName);
-
-            dependencyMap.put(tableName, dependency);
-        }
-    }
-
-    public void addDependency(String fkTableName, String fkColumnName, String pkTableName, String pkColumnName) {
-        Dependency child;
-        Dependency parent;
-
-        if(dependencyMap.get(String.format("%s.%s", pkTableName, pkColumnName)) != null){
-            child = dependencyMap.get(pkTableName);
-        } else {
-            child = new Dependency();
-            child.setTable(pkTableName);
-            child.setColumn(pkColumnName);
-        }
-
-        if(dependencyMap.get(String.format("%s.%s", fkTableName, fkColumnName)) != null){
-            parent = dependencyMap.get(fkTableName);
-        } else {
-            parent = new Dependency();
-            parent.setTable(fkTableName);
-            parent.setColumn(fkColumnName);
-        }
-
-        parent.getChildren().add(child);
-        child.getParents().add(parent);
-
-        dependencyMap.put(parent.getTable(), parent);
-        dependencyMap.put(child.getTable(), child);
+    public boolean hasNext(){
+        return handled.size() < loaded.size();
     }
 }
