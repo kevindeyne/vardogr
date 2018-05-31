@@ -10,45 +10,35 @@ public class Scrambler {
 
     private static DataFactory f = new DataFactory();
 
-    static String consistentValue(String type, Integer rowNr, Long tableSize, boolean nullable){
+    static String consistentValue(Class clazz, Integer rowNr, Long tableSize, boolean canHaveNull){
         if(rowNr > tableSize) {
-            if(nullable){
+            if(canHaveNull){
                 return "NULL";
             } else {
               rowNr = (int)(Math.random() * (tableSize.intValue())) + 1;
             }
         }
 
-        try{
-            Class clazz = Class.forName(type);
-
-            if(clazz.equals(Integer.class)){
-                return rowNr.toString();
-            }
-
-            return String.format("'%s'", rowNr.toString());
-        }catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+        if(clazz.equals(Integer.class)){
+            return rowNr.toString();
         }
+
+        return String.format("'%s'", rowNr.toString());
     }
 
-    static String scrambleValue(String columnName, String type, Integer length) {
-        try{
-            Class clazz = Class.forName(type);
-
+    static String scrambleValue(Class clazz, String columnName, Integer length) {
+        if(null != clazz) {
             if(clazz.equals(Integer.class)){
                 return f.getNumberText(length);
-            } else if(clazz.equals(Date.class) || clazz.equals(java.util.Date.class)){
+            } else if(clazz.equals(Date.class)){
                 return String.format("'%s'", f.getBirthDate().toInstant().atZone(ZoneId.systemDefault()).toLocalDate().format(DateTimeFormatter.ISO_DATE));
             }
+        }
 
-            if(columnName.toLowerCase().contains("name")){
-                return nameGen(columnName, length);
-            } else {
-                return String.format("'%s'", getRandomText(length));
-            }
-        }catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+        if(columnName.toLowerCase().contains("name")){
+            return nameGen(columnName, length);
+        } else {
+            return String.format("'%s'", getRandomText(length));
         }
     }
 
@@ -64,6 +54,8 @@ public class Scrambler {
                 sb.append(" ");
             }
             result = sb.toString().trim();
+        } else if(length == 0) {
+            result = StatementBuilder.EMPTY;
         } else {
             result = f.getRandomText(1, length);
         }

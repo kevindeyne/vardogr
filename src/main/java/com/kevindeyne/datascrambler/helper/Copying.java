@@ -21,11 +21,12 @@ public class Copying {
             MConnection mConnection = obj.buildConnection(db);
             loadKeysForTables(mConnection);
 
-            try (ProgressBar pb = new ProgressBar("Scrambling data ...", totalRecordsToDownload, ProgressBarStyle.ASCII)) {
-                while(fk.hasNext()){
-                    Copying.getData(mConnection, fk.next(), pb);
-                }
+            while(fk.hasNext()){
+                Copying.getData(mConnection, fk.next());
             }
+            System.out.print("Processing: " + totalRecordsToDownload + " / " + totalRecordsToDownload + "\r");
+            System.out.println();
+
             mConnection.getConnection().close();
         } catch(SQLException e) {
             throw new RuntimeException(e);
@@ -50,7 +51,7 @@ public class Copying {
         return rs.getString(3);
     }
 
-    private static void getData(MConnection con, Table table, ProgressBar progress){
+    private static void getData(MConnection con, Table table){
         try {
             DatabaseMetaData metadata = con.getConnection().getMetaData();
             ResultSet rs = metadata.getColumns(con.getCatalog(), con.getSchema(), table.getName(), null);
@@ -60,7 +61,10 @@ public class Copying {
 
                 for (int i = 0; i < table.getTableSize(); i++) {
                     StatementBuilder.buildInsertStatement(table, con.getDb(), rs);
-                    progress.stepTo(++currentDownloadedRecords);
+
+                    if(++currentDownloadedRecords % 101 == 0){
+                        System.out.print("Processing: " + currentDownloadedRecords + " / " + totalRecordsToDownload + "\r");
+                    }
                 }
             }
 

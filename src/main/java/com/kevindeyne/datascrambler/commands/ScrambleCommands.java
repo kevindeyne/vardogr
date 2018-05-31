@@ -40,7 +40,8 @@ public class ScrambleCommands {
             Copying.reset();
             Copying.downloadDatabase(obj, database);
         } catch (RuntimeException e) {
-            return e.getMessage();
+            throw e;
+            //return e.getMessage();
         } finally {
             closeConnection(con);
 
