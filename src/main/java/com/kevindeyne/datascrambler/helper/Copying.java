@@ -4,8 +4,6 @@ import com.kevindeyne.datascrambler.domain.Config;
 import com.kevindeyne.datascrambler.domain.ForeignKey;
 import com.kevindeyne.datascrambler.domain.MConnection;
 import com.kevindeyne.datascrambler.domain.Table;
-import me.tongfei.progressbar.ProgressBar;
-import me.tongfei.progressbar.ProgressBarStyle;
 
 import java.sql.*;
 
