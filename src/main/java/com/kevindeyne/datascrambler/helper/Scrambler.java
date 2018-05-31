@@ -10,7 +10,7 @@ public class Scrambler {
 
     private static DataFactory f = new DataFactory();
 
-    static String consistentValue(String type, Integer rowNr, Long max, Long tableSize, boolean nullable){ //TODO use max to calculate fill rate and simulate
+    static String consistentValue(String type, Integer rowNr, Long tableSize, boolean nullable){
         if(rowNr > tableSize) {
             if(nullable){
                 return "NULL";
@@ -63,7 +63,7 @@ public class Scrambler {
                 sb.append(f.getRandomText(1, length2/div));
                 sb.append(" ");
             }
-            result = sb.toString();
+            result = sb.toString().trim();
         } else {
             result = f.getRandomText(1, length);
         }

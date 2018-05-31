@@ -1,42 +1,52 @@
 package com.kevindeyne.datascrambler.helper;
 
+import com.kevindeyne.datascrambler.domain.ForeignKey;
+import com.kevindeyne.datascrambler.domain.MConnection;
+import com.kevindeyne.datascrambler.domain.Table;
+
 import java.sql.*;
 import java.util.Collection;
 
 class KeyBuilder {
 
-    static void getKeys(Connection connection, String table, String db) throws SQLException {
-        DatabaseMetaData md = connection.getMetaData();
-        String catalog = connection.getCatalog();
-        String schema = connection.getSchema();
+    private static final String COL = "COL";
 
-        ResultSet primaryKeys = md.getPrimaryKeys(catalog, schema, table);
+    static void getKeys(MConnection connection, String table) throws SQLException {
+        ResultSet primaryKeys = connection.getPrimaryKeys(table);
         while(primaryKeys.next()) {
             ResultSetMetaData metaData = primaryKeys.getMetaData();
 
             for (int i = 1; i < metaData.getColumnCount() + 1; i++) {
-                String colName = metaData.getColumnName(i);
-                if(colName.contains("COL")){
-                    Copying.fk.addTable(table, primaryKeys.getObject(i).toString());
+                if(isColumn(metaData, i)){
+                    Table loadedTable = Copying.addTable(table, primaryKeys.getObject(i).toString());
+                    appendTableSizeToTable(connection, loadedTable);
                 }
             }
         }
 
-        loadFKs(connection, table, db);
+        loadFKs(connection, table);
     }
 
-    private static void loadFKs(Connection connection, String table, String db) throws SQLException {
-        ResultSet foreignKeys = connection.getMetaData().getImportedKeys(connection.getCatalog(), connection.getSchema(), table);
-        while (foreignKeys.next()) {
-            String fkTableName = foreignKeys.getString("FKTABLE_NAME");
-            String fkColumnName = foreignKeys.getString("FKCOLUMN_NAME");
-            String pkTableName = foreignKeys.getString("PKTABLE_NAME");
-            String pkColumnName = foreignKeys.getString("PKCOLUMN_NAME");
+    private static void appendTableSizeToTable(MConnection connection, Table loadedTable) {
+        loadedTable.setTableSize(connection.countTableSize(loadedTable.getName()));
+        Copying.addRecordCount(loadedTable.getTableSize());
+    }
 
-            Long amountOfCouplings = Copying.countFKs(connection, db, fkTableName, fkColumnName, pkTableName, pkColumnName);
-            Long tableSize = Copying.countTableSize(connection, db, pkTableName);
+    private static boolean isColumn(ResultSetMetaData metaData, int i) throws SQLException{
+        return metaData.getColumnName(i).contains(COL);
+    }
 
-            Copying.fk.addDependency(fkTableName, fkColumnName, pkTableName, pkColumnName, amountOfCouplings, tableSize);
+    private static void loadFKs(MConnection c, String table) throws SQLException {
+        ResultSet fks = c.getConnection()
+                .getMetaData()
+                .getImportedKeys(c.getCatalog(), c.getSchema(), table);
+        while (fks.next()) {
+            String fkTableName = fks.getString(ForeignKey.FKTABLE_NAME);
+            String fkColumnName = fks.getString(ForeignKey.FKCOLUMN_NAME);
+            String pkTableName = fks.getString(ForeignKey.PKTABLE_NAME);
+            String pkColumnName = fks.getString(ForeignKey.PKCOLUMN_NAME);
+
+            Copying.addDependency(fkTableName, fkColumnName, pkTableName, pkColumnName);
         }
     }
 
@@ -45,11 +55,11 @@ class KeyBuilder {
             return keys.iterator().next();
         } else {
             StringBuilder sb = new StringBuilder();
-            String appender = "";
+            String appender = StatementBuilder.EMPTY;
             for(String key : keys){
                 sb.append(appender);
                 sb.append(key);
-                appender = ",";
+                appender = StatementBuilder.COMMA;
             }
             return sb.toString();
         }

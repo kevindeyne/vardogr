@@ -3,13 +3,14 @@ package com.kevindeyne.datascrambler.helper;
 import com.kevindeyne.datascrambler.domain.ForeignKey;
 import com.kevindeyne.datascrambler.domain.Table;
 
-import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 
 public class StatementBuilder {
 
+    public static final String EMPTY = "";
+    public static final String COMMA = ",";
     //TODO move to config?
     private static String CHARSET = "utf8";
     private static String ENGINE = "InnoDB";
@@ -25,22 +26,24 @@ public class StatementBuilder {
         String concat = "";
         for (int i = 1; i < colCount; i++) {
             String scrambleValue = null;
+
             String columnName = metaData.getColumnName(i);
+            String columnClassName = metaData.getColumnClassName(i);
 
             if(table.getPks().contains(columnName)){
-                scrambleValue = Scrambler.consistentValue(metaData.getColumnClassName(i), rs.getRow(), Long.MAX_VALUE, Long.MAX_VALUE, false);
+                scrambleValue = Scrambler.consistentValue(columnClassName, rs.getRow(), Long.MAX_VALUE, false);
             }
 
             for(ForeignKey fk : table.getFks()){
                 if(fk.getVia().equals(columnName)){
-                    Boolean nullable = metaData.isNullable(i) == ResultSetMetaData.columnNullable;
-                    scrambleValue = Scrambler.consistentValue(metaData.getColumnClassName(i), rs.getRow(), fk.getFkCount(), fk.getTableSize(), nullable);
+                    scrambleValue = Scrambler.consistentValue(columnClassName, rs.getRow(), fk.getTable().getTableSize(), isNullable(metaData, i));
                     break;
                 }
             }
 
             if(scrambleValue == null) {
-                scrambleValue = Scrambler.scrambleValue(columnName, metaData.getColumnClassName(i), metaData.getPrecision(i));
+                int precision = metaData.getPrecision(i);
+                scrambleValue = Scrambler.scrambleValue(columnName, columnClassName, precision);
             }
 
             sb.append(concat);
@@ -50,6 +53,10 @@ public class StatementBuilder {
         sb.append(");");
 
         return sb.toString();
+    }
+
+    private static boolean isNullable(ResultSetMetaData metaData, int i) throws SQLException {
+        return metaData.isNullable(i) == ResultSetMetaData.columnNullable;
     }
 
     public static String buildCreateTableStatement(Table table, ResultSet rs, String db) throws SQLException {
@@ -75,7 +82,8 @@ public class StatementBuilder {
             sb.append(String.format("PRIMARY KEY (`%s`)", primKey));
         }
 
-        sb.append(String.format(") ENGINE=%s DEFAULT CHARSET=%s COLLATE=%s;", ENGINE, CHARSET, COLLATE));
+        sb.append(");");
+        //sb.append(String.format(") ENGINE=%s DEFAULT CHARSET=%s COLLATE=%s;", ENGINE, CHARSET, COLLATE));
         return sb.toString();
     }
 

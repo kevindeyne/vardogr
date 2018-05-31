@@ -29,16 +29,16 @@ public class StatementTest {
         FKMapping fk = new FKMapping();
 
         fk.addTable("person", "id");
-        fk.addDependency("person", "adres_id", "adres", "id", 0L, 0L);
+        fk.addDependency("person", "adres_id", "adres", "id");
 
         fk.addTable("post_code", "id");
 
         fk.addTable("order", "id");
-        fk.addDependency("order", "person_id", "person", "id", 0L, 0L);
-        fk.addDependency("order", "adres_id", "adres", "id", 0L, 0L);
+        fk.addDependency("order", "person_id", "person", "id");
+        fk.addDependency("order", "adres_id", "adres", "id");
 
         fk.addTable("adres", "id");
-        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L, 0L);
+        fk.addDependency("adres", "postcode_id", "post_code", "id");
 
         Assert.assertTrue(fk.hasNext());
         Assert.assertEquals("post_code", fk.next().getName());
@@ -64,17 +64,17 @@ public class StatementTest {
     public void testInsertString() throws SQLException {
         FKMapping fk = new FKMapping();
 
-        fk.addTable("person", "id");
-        fk.addDependency("person", "adres_id", "adres", "id", 0L, 0L);
+        addTable(fk, "person");
+        fk.addDependency("person", "adres_id", "adres", "id");
 
-        fk.addTable("post_code", "id");
+        addTable(fk, "post_code");
 
-        fk.addTable("order", "id");
-        fk.addDependency("order", "person_id", "person", "id", 0L, 0L);
-        fk.addDependency("order", "adres_id", "adres", "id", 0L, 0L);
+        addTable(fk, "order");
+        fk.addDependency("order", "person_id", "person", "id");
+        fk.addDependency("order", "adres_id", "adres", "id");
 
-        fk.addTable("adres", "id");
-        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L, 0L);
+        addTable(fk, "adres");
+        fk.addDependency("adres", "postcode_id", "post_code", "id");
 
         Assert.assertTrue(fk.hasNext());
         Assert.assertEquals("post_code", fk.next().getName());
@@ -98,17 +98,17 @@ public class StatementTest {
     public void testInsertInteger() throws SQLException {
         FKMapping fk = new FKMapping();
 
-        fk.addTable("person", "id");
-        fk.addDependency("person", "adres_id", "adres", "id", 0L, 0L);
+        addTable(fk, "person");
+        fk.addDependency("person", "adres_id", "adres", "id");
 
-        fk.addTable("post_code", "id");
+        addTable(fk, "post_code");
 
-        fk.addTable("order", "id");
-        fk.addDependency("order", "person_id", "person", "id", 0L, 0L);
-        fk.addDependency("order", "adres_id", "adres", "id", 0L, 0L);
+        addTable(fk, "order");
+        fk.addDependency("order", "person_id", "person", "id");
+        fk.addDependency("order", "adres_id", "adres", "id");
 
-        fk.addTable("adres", "id");
-        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L, 0L);
+        addTable(fk, "adres");
+        fk.addDependency("adres", "postcode_id", "post_code", "id");
 
         Assert.assertTrue(fk.hasNext());
         Assert.assertEquals("post_code", fk.next().getName());
@@ -129,21 +129,26 @@ public class StatementTest {
         Assert.assertNotEquals(sql.replace("INSERT INTO `TEST_DB`.`adres` VALUES (", "").substring(0,1), "'");
     }
 
+    private void addTable(FKMapping fk, String tableName){
+        Table person = fk.addTable(tableName, "id");
+        person.setTableSize(1L);
+    };
+
     @Test
     public void testInsertDate() throws SQLException {
         FKMapping fk = new FKMapping();
 
         fk.addTable("person", "id");
-        fk.addDependency("person", "adres_id", "adres", "id", 0L, 0L);
+        fk.addDependency("person", "adres_id", "adres", "id");
 
         fk.addTable("post_code", "id");
 
         fk.addTable("order", "id");
-        fk.addDependency("order", "person_id", "person", "id", 0L, 0L);
-        fk.addDependency("order", "adres_id", "adres", "id", 0L, 0L);
+        fk.addDependency("order", "person_id", "person", "id");
+        fk.addDependency("order", "adres_id", "adres", "id");
 
         fk.addTable("adres", "id");
-        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L, 0L);
+        fk.addDependency("adres", "postcode_id", "post_code", "id");
 
         Assert.assertTrue(fk.hasNext());
         Assert.assertEquals("post_code", fk.next().getName());
@@ -165,17 +170,17 @@ public class StatementTest {
     public void testIDConsistency() throws SQLException {
         FKMapping fk = new FKMapping();
 
-        fk.addTable("person", "id");
-        fk.addDependency("person", "adres_id", "adres", "id", 0L, 0L);
+        addTable(fk, "person");
+        fk.addDependency("person", "adres_id", "adres", "id");
 
-        fk.addTable("post_code", "id");
+        addTable(fk, "post_code");
 
-        fk.addTable("order", "id");
-        fk.addDependency("order", "person_id", "person", "id", 0L, 0L);
-        fk.addDependency("order", "adres_id", "adres", "id", 0L, 0L);
+        addTable(fk, "order");
+        fk.addDependency("order", "person_id", "person", "id");
+        fk.addDependency("order", "adres_id", "adres", "id");
 
-        fk.addTable("adres", "id");
-        fk.addDependency("adres", "postcode_id", "post_code", "id", 0L, 0L);
+        addTable(fk, "adres");
+        fk.addDependency("adres", "postcode_id", "post_code", "id");
 
         Table postcode = fk.next();
         Assert.assertTrue(fk.hasNext());

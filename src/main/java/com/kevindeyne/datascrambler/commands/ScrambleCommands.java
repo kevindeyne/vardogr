@@ -8,6 +8,8 @@ import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
+import java.sql.SQLException;
+
 import static com.kevindeyne.datascrambler.helper.ConfigLoading.*;
 
 @ShellComponent
@@ -28,17 +30,21 @@ public class ScrambleCommands {
 
     @ShellMethod("Connects to a source database and downloads a scrambled version of said source.")
     public String download(@ShellOption(defaultValue = NONE) String database) {
+        MConnection con = null;
         try {
             Config obj = getConfigFile();
             obj.printProps();
-            MConnection con = obj.buildConnection();
+            con = obj.buildConnection();
             if (noDatabaseParameterProvided(database))
                 return PrintCmds.green(NO_DB + con.getFoundDatabases());
+            Copying.reset();
             Copying.downloadDatabase(obj, database);
         } catch (RuntimeException e) {
             return e.getMessage();
-        }
+        } finally {
+            closeConnection(con);
 
+        }
         return PrintCmds.green("Download complete. Check the files in the /downloaded map. Run upload.");
     }
 
@@ -48,6 +54,17 @@ public class ScrambleCommands {
             return PrintCmds.green(NO_DB + " TODO");
 
         return "UPLOAD IS STILL TO DO";
+    }
+
+    private void closeConnection(MConnection con) {
+        Copying.reset();
+        if(con != null){
+            try{
+                con.getConnection().close();
+            } catch(SQLException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
     private boolean noDatabaseParameterProvided(@ShellOption(defaultValue = NONE) String database) {

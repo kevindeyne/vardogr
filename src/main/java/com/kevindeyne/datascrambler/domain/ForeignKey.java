@@ -2,16 +2,16 @@ package com.kevindeyne.datascrambler.domain;
 
 public class ForeignKey {
 
+    public static final String FKTABLE_NAME = "FKTABLE_NAME";
+    public static final String FKCOLUMN_NAME = "FKCOLUMN_NAME";
+    public static final String PKTABLE_NAME = "PKTABLE_NAME";
+    public static final String PKCOLUMN_NAME = "PKCOLUMN_NAME";
     private Table table;
     private String via;
-    private Long fkCount;
-    private Long tableSize;
 
-    public ForeignKey(Table table, String columnName, Long count, Long tableSize) {
+    public ForeignKey(Table table, String columnName) {
         this.table = table;
         this.via = columnName;
-        this.fkCount = count;
-        this.tableSize = tableSize;
     }
 
     public Table getTable() {
@@ -28,21 +28,5 @@ public class ForeignKey {
 
     public void setVia(String columnName) {
         this.via = columnName;
-    }
-
-    public Long getFkCount() {
-        return fkCount;
-    }
-
-    public void setFkCount(Long count) {
-        this.fkCount = count;
-    }
-
-    public Long getTableSize() {
-        return tableSize;
-    }
-
-    public void setTableSize(Long tableSize) {
-        this.tableSize = tableSize;
     }
 }

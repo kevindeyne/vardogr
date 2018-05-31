@@ -8,6 +8,7 @@ public class Table {
     private String name;
     private List<String> pks;
     private List<ForeignKey> fks;
+    private Long tableSize;
 
     public Table(String name) {
         this.name = name;
@@ -37,6 +38,14 @@ public class Table {
 
     public void setFks(List<ForeignKey> fks) {
         this.fks = fks;
+    }
+
+    public Long getTableSize() {
+        return tableSize;
+    }
+
+    public void setTableSize(Long tableSize) {
+        this.tableSize = tableSize;
     }
 
     @Override

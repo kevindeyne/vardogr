@@ -12,7 +12,7 @@ public class PrintCmds {
     }
 
     public static void printProgress() {
-        try (ProgressBar pb = new ProgressBar("Scrambling data ...", 100, ProgressBarStyle.ASCII)) {
+        try (ProgressBar pb = new ProgressBar("Scrambling data ...", 100, ProgressBarStyle.COLORFUL_UNICODE_BLOCK )) {
             for (int i = 0; i < 100; i++) {
                 try {
                     pb.step();

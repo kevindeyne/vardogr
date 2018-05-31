@@ -32,7 +32,7 @@ public class Config {
             if(null == db){ db = ""; }
             String url = "jdbc:" + type + "://" + host + ":" + port + "/" + db + "?useSSL=false";
             Connection con = DriverManager.getConnection(url, connectionProps);
-            return new MConnection(con);
+            return new MConnection(con, db);
         } catch (SQLException e) {
             throw new RuntimeException(e);
         }

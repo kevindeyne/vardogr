@@ -4,100 +4,91 @@ import com.kevindeyne.datascrambler.domain.Config;
 import com.kevindeyne.datascrambler.domain.ForeignKey;
 import com.kevindeyne.datascrambler.domain.MConnection;
 import com.kevindeyne.datascrambler.domain.Table;
+import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarStyle;
 
 import java.sql.*;
 
 public class Copying {
 
-    static FKMapping fk = new FKMapping();
+    private static FKMapping fk = new FKMapping();
+    private static Long totalRecordsToDownload = 0L;
+    private static Long currentDownloadedRecords = 0L;
 
     public static void downloadDatabase(Config obj, String db) {
         try {
             fk = new FKMapping();
             MConnection mConnection = obj.buildConnection(db);
-            loadKeysForTables(mConnection.getConnection(), db);
+            loadKeysForTables(mConnection);
 
-            while(fk.hasNext()){
-                Copying.getData(mConnection, fk.next(), db);
+            try (ProgressBar pb = new ProgressBar("Scrambling data ...", totalRecordsToDownload, ProgressBarStyle.ASCII)) {
+                while(fk.hasNext()){
+                    Copying.getData(mConnection, fk.next(), pb);
+                }
             }
+            mConnection.getConnection().close();
         } catch(SQLException e) {
             throw new RuntimeException(e);
         }
     }
 
-    private static void loadKeysForTables(Connection connection, String db) throws SQLException {
+    private static void loadKeysForTables(MConnection connection) throws SQLException {
+        totalRecordsToDownload = 0L;
+        currentDownloadedRecords = 0L;
         ResultSet rs = getAllTables(connection);
         while (rs.next()) {
-            KeyBuilder.getKeys(connection, getTableName(rs), db);
+            String tableName = getTableName(rs);
+            KeyBuilder.getKeys(connection, tableName);
         }
     }
 
-    private static ResultSet getAllTables(Connection connection) throws SQLException {
-        return connection.getMetaData().getTables(connection.getCatalog(), connection.getSchema(), "%", null);
+    private static ResultSet getAllTables(MConnection connection) throws SQLException {
+        return connection.getConnection().getMetaData().getTables(connection.getCatalog(), connection.getSchema(), "%", null);
     }
 
     private static String getTableName(ResultSet rs) throws SQLException {
         return rs.getString(3);
     }
 
-    static Long countFKs(Connection connection, String db, String fkTableName, String fkColumnName, String pkTableName, String pkColumnName) throws SQLException {
-        String countSql = "SELECT count(*) FROM `%s`.`%s` o INNER JOIN `%s`.`%s` p on p.%s = o.%s";
-        countSql = String.format(countSql, db, fkTableName, db, pkTableName, pkColumnName, fkColumnName);
-        Long amountOfCouplings;
-        try (PreparedStatement selectStmt = connection.prepareStatement(countSql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY); ResultSet rs = selectStmt.executeQuery()) {
-            if (rs.next()) {
-                amountOfCouplings = rs.getLong(1);
-            } else {
-                amountOfCouplings = -1L;
-            }
-        }
-        return amountOfCouplings;
-    }
-
-    private static void getData(MConnection con, Table table, String db){
+    private static void getData(MConnection con, Table table, ProgressBar progress){
         try {
-            String selectAll = String.format("SELECT * FROM `%s`.`%s`", db, table.getName());
-            try (PreparedStatement selectStmt = con.getConnection().prepareStatement(selectAll, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY); ResultSet rs = selectStmt.executeQuery()) {
-                if (!rs.isBeforeFirst()) {
-                    System.out.println("No rows found");
-                } else {
-                    String createQuery = null;
-                    while (rs.next()) {
-                        if (createQuery == null) {
-                            createQuery = StatementBuilder.buildCreateTableStatement(table, rs, db);
-                            System.out.println();
-                            System.out.println(createQuery);
-                        }
+            DatabaseMetaData metadata = con.getConnection().getMetaData();
+            ResultSet rs = metadata.getColumns(con.getCatalog(), con.getSchema(), table.getName(), null);
 
-                        String insert = StatementBuilder.buildInsertStatement(table, db, rs);
-                        System.out.println(insert);
-                    }
+            if (rs.next()) {
+                StatementBuilder.buildCreateTableStatement(table, rs, con.getDb());
 
-                    for(ForeignKey key : table.getFks()){
-                        String addFK = StatementBuilder.buildFKStatement(table, key, db);
-                        System.out.println();
-                        System.out.println(addFK);
-                    }
+                for (int i = 0; i < table.getTableSize(); i++) {
+                    StatementBuilder.buildInsertStatement(table, con.getDb(), rs);
+                    progress.stepTo(++currentDownloadedRecords);
                 }
             }
-        }
-        catch (SQLException e) {
+
+            for(ForeignKey key : table.getFks()){
+                StatementBuilder.buildFKStatement(table, key, con.getDb());
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
-
-        //throw new RuntimeException("Stopping");
     }
 
-    public static Long countTableSize(Connection connection, String db, String tableName) {
-        String countSql = "SELECT count(*) FROM `%s`.`%s`";
-        countSql = String.format(countSql, db, tableName);
-        try (PreparedStatement selectStmt = connection.prepareStatement(countSql, ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY); ResultSet rs = selectStmt.executeQuery()) {
-            if (rs.next()) {
-                return rs.getLong(1);
-            }
-        } catch (SQLException e){
-            e.printStackTrace();
-        }
-        return -1L;
+    public static void reset(){
+        fk = null;
+        totalRecordsToDownload = 0L;
+        currentDownloadedRecords = 0L;
+        System.gc();
+    }
+
+    public static void addRecordCount(Long tableSize) {
+        totalRecordsToDownload += tableSize;
+    }
+
+    public static Table addTable(String tableName, String ... columnNames){
+        return fk.addTable(tableName, columnNames);
+    }
+
+    public static void addDependency(String fkTableName, String fkColumnName, String pkTableName, String pkColumnName) {
+        fk.addDependency(fkTableName, fkColumnName, pkTableName, pkColumnName);
     }
 }
