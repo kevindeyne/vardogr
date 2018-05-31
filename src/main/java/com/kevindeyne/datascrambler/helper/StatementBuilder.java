@@ -1,5 +1,6 @@
 package com.kevindeyne.datascrambler.helper;
 
+import com.kevindeyne.datascrambler.domain.Column;
 import com.kevindeyne.datascrambler.domain.ForeignKey;
 import com.kevindeyne.datascrambler.domain.Table;
 
@@ -15,74 +16,72 @@ public class StatementBuilder {
     private static final String DATA_TYPE = "DATA_TYPE";
     private static final String COLUMN_NAME = "COLUMN_NAME";
     private static final String COLUMN_SIZE = "COLUMN_SIZE";
+    private static final String TYPE_NAME = "TYPE_NAME";
+    private static final String CLOSE_STATEMENT = ");";
 
     //TODO move to config?
     private static String CHARSET = "utf8";
     private static String ENGINE = "InnoDB";
     private static String COLLATE = "utf8_bin";
 
-    public static String buildInsertStatement(Table table, String db, ResultSet rs) throws SQLException {
+    public static String buildInsertStatement(Table table, String db, int i) {
         StringBuilder sb = new StringBuilder();
 
         sb.append(String.format("INSERT INTO `%s`.`%s` VALUES (", db, table.getName()));
-        String concat = "";
-        while (rs.next()) {
-            String columnName = rs.getString(COLUMN_NAME);
-            Class clazz = toJavaType(rs.getInt(DATA_TYPE));
-
+        String concat = EMPTY;
+        for(Column col : table.getColumns()) {
             String scrambleValue = null;
 
-            if(table.getPks().contains(columnName)){
-                scrambleValue = Scrambler.consistentValue(clazz, rs.getRow(), Long.MAX_VALUE, false);
+            if(table.getPks().contains(col.getName())){
+                scrambleValue = Scrambler.consistentValue(col.getClazz(), i, Long.MAX_VALUE, false);
             }
 
             for(ForeignKey fk : table.getFks()){
-                if(fk.getVia().equals(columnName)){
-                    scrambleValue = Scrambler.consistentValue(clazz, rs.getRow(), fk.getTable().getTableSize(), rs.getBoolean(ALLOWS_NULL));
+                if(fk.getVia().equals(col.getName())){
+                    scrambleValue = Scrambler.consistentValue(col.getClazz(), i, fk.getTable().getTableSize(), col.isNullable());
                     break;
                 }
             }
 
             if(scrambleValue == null) {
-                int size = rs.getInt(COLUMN_SIZE);
-                scrambleValue = Scrambler.scrambleValue(clazz, columnName, size);
+                scrambleValue = Scrambler.scrambleValue(col.getClazz(), col.getName(), col.getPrecision());
             }
 
             sb.append(concat);
             sb.append(scrambleValue);
-            concat = ",";
+            concat = COMMA;
         }
 
-        sb.append(");");
+        sb.append(CLOSE_STATEMENT);
 
         return sb.toString();
     }
 
-    private static boolean isNullable(ResultSetMetaData metaData, int i) throws SQLException {
-        return metaData.isNullable(i) == ResultSetMetaData.columnNullable;
-    }
-
-    public static String buildCreateTableStatement(Table table, ResultSet rs, String db) throws SQLException {
+    public static String buildCreateTableStatement(Table table, ResultSet rs, String db) throws SQLException, ClassNotFoundException {
         StringBuilder sb = new StringBuilder();
-        ResultSetMetaData metaData = rs.getMetaData();
-        int colCount = metaData.getColumnCount() + 1;
 
         Boolean noKeys = table.getPks().isEmpty();
+        table.resetColumns();
         sb.append(String.format("CREATE TABLE `%s`.`%s` (", db, table.getName()));
-        for (int i = 1; i < colCount; i++) {
-            String label = metaData.getColumnName(i);
-            String type = metaData.getColumnTypeName(i);
-            String length = Integer.toString(metaData.getPrecision(i));
-            sb.append(String.format("`%s` %s(%s)", label, type, length));
 
-            if (!(noKeys && i + 1 == colCount)) {
+        while (rs.next()) {
+            String label = rs.getString(COLUMN_NAME);
+            Class clazz = toJavaType(rs.getInt(DATA_TYPE));
+            String type = rs.getString(TYPE_NAME);
+            int length = rs.getInt(COLUMN_SIZE);
+            boolean allowsNulls = rs.getBoolean(ALLOWS_NULL);
+
+            table.getColumns().add(new Column(label, clazz, length, allowsNulls));
+            sb.append(String.format("`%s` %s(%s)", label, type, Integer.toString(length)));
+
+            if (!rs.isLast()) {
                 sb.append(",");
             }
         }
 
         if (!noKeys) {
             String primKey = KeyBuilder.buildPrimaryKeys(table.getPks());
-            sb.append(String.format("PRIMARY KEY (`%s`)", primKey));
+            sb.append(String.format(" PRIMARY KEY (`%s`)", primKey));
         }
 
         sb.append(");");

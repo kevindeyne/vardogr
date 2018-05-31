@@ -69,8 +69,7 @@ public class FKMapping {
         return handled.size() < loaded.size();
     }
 
-    public void reset(){
-        loaded = new ArrayList<>();
-        handled = new ArrayList<>();
+    public int getTableNr(Table table) {
+        return loaded.indexOf(table);
     }
 }

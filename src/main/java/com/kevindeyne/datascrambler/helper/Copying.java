@@ -14,20 +14,25 @@ public class Copying {
     private static Long currentDownloadedRecords = 0L;
 
     public static void downloadDatabase(Config obj, String db) {
+        MConnection mConnection = null;
         try {
             fk = new FKMapping();
-            MConnection mConnection = obj.buildConnection(db);
+            mConnection = obj.buildConnection(db);
             loadKeysForTables(mConnection);
-
+            Filewriter.cleanFolder();
             while(fk.hasNext()){
                 Copying.getData(mConnection, fk.next());
             }
-            System.out.print("Processing: " + totalRecordsToDownload + " / " + totalRecordsToDownload + "\r");
-            System.out.println();
-
-            mConnection.getConnection().close();
+            ProgressBar.finish(totalRecordsToDownload);
         } catch(SQLException e) {
             throw new RuntimeException(e);
+        } finally {
+            try{
+                if(null != mConnection)
+                    mConnection.getConnection().close();
+            } catch(SQLException e) {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -52,24 +57,22 @@ public class Copying {
     private static void getData(MConnection con, Table table){
         try {
             DatabaseMetaData metadata = con.getConnection().getMetaData();
-            ResultSet rs = metadata.getColumns(con.getCatalog(), con.getSchema(), table.getName(), null);
+            ResultSet resultSet = metadata.getColumns(con.getCatalog(), con.getSchema(), table.getName(), null);
+            int tableNr = fk.getTableNr(table);
 
-            if (rs.next()) {
-                StatementBuilder.buildCreateTableStatement(table, rs, con.getDb());
-
-                for (int i = 0; i < table.getTableSize(); i++) {
-                    StatementBuilder.buildInsertStatement(table, con.getDb(), rs);
-
-                    if(++currentDownloadedRecords % 101 == 0){
-                        System.out.print("Processing: " + currentDownloadedRecords + " / " + totalRecordsToDownload + "\r");
-                    }
-                }
+            String createSQL = StatementBuilder.buildCreateTableStatement(table, resultSet, con.getDb());
+            Filewriter.writeToFile(createSQL, con.getDb(), tableNr);
+            for (int i = 1; i < table.getTableSize() + 1; i++) {
+                String insertSQL = StatementBuilder.buildInsertStatement(table, con.getDb(), i);
+                Filewriter.writeToFile(insertSQL, con.getDb(), tableNr);
+                ProgressBar.step(++currentDownloadedRecords, totalRecordsToDownload);
             }
 
             for(ForeignKey key : table.getFks()){
-                StatementBuilder.buildFKStatement(table, key, con.getDb());
+                String fkSQL = StatementBuilder.buildFKStatement(table, key, con.getDb());
+                Filewriter.writeToFile(fkSQL, con.getDb(), tableNr);
             }
-        } catch (SQLException e) {
+        } catch (Exception e) {
             e.printStackTrace();
             throw new RuntimeException(e);
         }

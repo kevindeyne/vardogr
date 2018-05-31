@@ -8,6 +8,7 @@ public class Table {
     private String name;
     private List<String> pks;
     private List<ForeignKey> fks;
+    private List<Column> columns;
     private Long tableSize;
 
     public Table(String name) {
@@ -48,6 +49,10 @@ public class Table {
         this.tableSize = tableSize;
     }
 
+    public List<Column> getColumns() {
+        return columns;
+    }
+
     @Override
     public boolean equals(Object obj) {
         if(obj instanceof Table) {
@@ -56,5 +61,9 @@ public class Table {
         } else {
             return false;
         }
+    }
+
+    public void resetColumns() {
+        columns = new ArrayList<>();
     }
 }
