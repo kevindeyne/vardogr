@@ -1,5 +1,7 @@
 package com.kevindeyne.datascrambler.domain;
 
+import org.jooq.Table;
+
 public class ForeignKey {
 
     public static final String FKTABLE_NAME = "FKTABLE_NAME";

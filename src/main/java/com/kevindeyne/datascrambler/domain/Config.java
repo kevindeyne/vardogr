@@ -1,73 +1,39 @@
 package com.kevindeyne.datascrambler.domain;
 
 import com.grack.nanojson.JsonObject;
+import com.kevindeyne.datascrambler.helper.SupportedDBType;
+import com.kevindeyne.datascrambler.service.EncryptService;
 
-import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.Properties;
 
 public class Config {
 
+    private String username = "root";
+    private String password = "";
+    private Integer port;
     private String host;
-    private String username;
-    private String password;
-    private String type;
-    private int port;
+    private String dbName;
+    private SupportedDBType dbType;
 
-    public Config(JsonObject obj) {
+    public Config(final JsonObject obj, final EncryptService encryptService) {
         host = obj.getString("host");
         username = obj.getString("username");
-        password = obj.getString("password");
-        type = obj.getString("type"); //TODO validate
+        password = encryptService.decrypt(obj.getString("password"));
         port = obj.getInt("port");
+        dbName = obj.getString("dbName");
+        dbType = SupportedDBType.valueOf(obj.getString("dbType").toUpperCase());
     }
 
-    public MConnection buildConnection(String db){
-        Properties connectionProps = new Properties();
-        connectionProps.put("user", getUsername());
-        connectionProps.put("password", getPassword());
+    public ProdConnection setupProdConnection() throws SQLException {
+        ProdConnection connection = new ProdConnection();
 
-        try {
-            if(null == db){ db = ""; }
-            String url = "jdbc:" + type + "://" + host + ":" + port + "/" + db + "?useSSL=false";
-            Connection con = DriverManager.getConnection(url, connectionProps);
-            return new MConnection(con, db);
-        } catch (SQLException e) {
-            throw new RuntimeException(e);
-        }
+        connection.setupConnection(setupUrl(dbType.getPlaceholder(), host, port, dbName), username, password);
+        if (connection.testConnection()) return connection;
+
+        throw new RuntimeException("Could not connect to PROD DB");
     }
 
-    public MConnection buildConnection(){
-        return buildConnection(null);
-    }
-
-    public String getHost() {
-        return host;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void printProps() {
-        System.out.println();
-        System.out.println("Config: ");
-        System.out.println(" Host: " + getHost());
-        System.out.println(" Port: " + getPort());
-        System.out.println(" Username: " + getUsername());
-        System.out.println();
+    private String setupUrl(String urlPlaceholder, String host, Integer port, String dbName) {
+        return urlPlaceholder.replace("host", host).replace("port", port.toString()).replace("dbname", dbName);
     }
 }
