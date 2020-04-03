@@ -33,6 +33,8 @@ public class ConfigServiceTest {
     private FileService fileService;
     @Mock
     private EncryptService encryptService;
+    @Mock
+    private ShellHelper shellHelper;
 
     @InjectMocks
     private ConfigService service;
@@ -85,6 +87,58 @@ public class ConfigServiceTest {
         assertEquals(SupportedDBType.MARIADB, config.getDbType());
     }
 
-    
+    @Test
+    public void testFileCorrupted() throws Exception {
+        Mockito.when(fileService.doesFileExist(anyString())).thenReturn(true);
+        Mockito.when(fileService.loadFile(anyString())).thenReturn("asdljasldkjaslkdjaslkdj");
+
+        Mockito.when(input.getString("Host", "localhost")).thenReturn(SAMPLE_HOST);
+        Mockito.when(input.getInteger("Port", 3306)).thenReturn(SAMPLE_PORT);
+        Mockito.when(input.getString("Username")).thenReturn(SAMPLE_USERNAME);
+        Mockito.when(input.getPassword("Password")).thenReturn(SAMPLE_RAW_PASSWORD);
+        Mockito.when(input.getString("Database name")).thenReturn(SAMPLE_DB_NAME);
+        Mockito.when(input.getOption("DB type", SupportedDBType.all())).thenReturn(SupportedDBType.MARIADB.name());
+
+        Mockito.when(encryptService.encrypt(anyString())).thenReturn(UUID.randomUUID().toString());
+        Mockito.when(encryptService.decrypt(anyString())).thenReturn(SAMPLE_RAW_PASSWORD);
+
+        Config config = service.loadConfig();
+
+        assertNotNull(config);
+        assertEquals(SAMPLE_HOST, config.getHost());
+        assertEquals(SAMPLE_PORT, config.getPort(), 0);
+        assertEquals(SAMPLE_DB_NAME, config.getDbName());
+        assertEquals(SAMPLE_USERNAME, config.getUsername());
+        assertEquals(SAMPLE_RAW_PASSWORD, config.getPassword());
+        assertEquals(SupportedDBType.MARIADB, config.getDbType());
+    }
+
+    @Test
+    public void testFileCorrupted2() throws Exception {
+        Mockito.when(fileService.doesFileExist(anyString())).thenReturn(true);
+        Mockito.when(fileService.loadFile(anyString())).thenReturn("{\"glossary\": {\"title\": \"example glossary\"}}\n");
+
+        Mockito.when(input.getString("Host", "localhost")).thenReturn(SAMPLE_HOST);
+        Mockito.when(input.getInteger("Port", 3306)).thenReturn(SAMPLE_PORT);
+        Mockito.when(input.getString("Username")).thenReturn(SAMPLE_USERNAME);
+        Mockito.when(input.getPassword("Password")).thenReturn(SAMPLE_RAW_PASSWORD);
+        Mockito.when(input.getString("Database name")).thenReturn(SAMPLE_DB_NAME);
+        Mockito.when(input.getOption("DB type", SupportedDBType.all())).thenReturn(SupportedDBType.MARIADB.name());
+
+        Mockito.when(encryptService.encrypt(anyString())).thenReturn(UUID.randomUUID().toString());
+        Mockito.when(encryptService.decrypt(anyString())).thenReturn(SAMPLE_RAW_PASSWORD);
+
+        Config config = service.loadConfig();
+
+        assertNotNull(config);
+        assertEquals(SAMPLE_HOST, config.getHost());
+        assertEquals(SAMPLE_PORT, config.getPort(), 0);
+        assertEquals(SAMPLE_DB_NAME, config.getDbName());
+        assertEquals(SAMPLE_USERNAME, config.getUsername());
+        assertEquals(SAMPLE_RAW_PASSWORD, config.getPassword());
+        assertEquals(SupportedDBType.MARIADB, config.getDbType());
+    }
+
+
 
 }

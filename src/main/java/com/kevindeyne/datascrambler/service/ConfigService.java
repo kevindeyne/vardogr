@@ -52,14 +52,16 @@ public class ConfigService {
             }
         } catch (Exception e) {
             shellHelper.printError("Config file corrupt. Restarting file creation ...");
-            return loadConfig(fileService.deleteFile(CONFIG_JSON));
+            fileService.deleteFile(CONFIG_JSON);
+            return loadConfig(true);
         }
 
         try {
             return new Config(configObj, encryptService);
         } catch (Exception e) {
             shellHelper.printError("Config file has corrupted content. Restarting file creation ...");
-            return loadConfig(fileService.deleteFile(CONFIG_JSON));
+            fileService.deleteFile(CONFIG_JSON);
+            return loadConfig(true);
         }
     }
 
