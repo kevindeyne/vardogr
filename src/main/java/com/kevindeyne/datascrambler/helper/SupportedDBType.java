@@ -1,5 +1,8 @@
 package com.kevindeyne.datascrambler.helper;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public enum SupportedDBType {
 
     ORACLE("jdbc:oracle:thin:@host:port:dbname"),
@@ -12,6 +15,12 @@ public enum SupportedDBType {
 
     SupportedDBType(String placeholder) {
         this.placeholder = placeholder;
+    }
+
+    public static List<String> all() {
+        List<String> all = new ArrayList<>();
+        for(SupportedDBType value : values()) all.add(value.name());
+        return all;
     }
 
     public String getPlaceholder() {

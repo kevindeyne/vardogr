@@ -6,7 +6,6 @@ import com.kevindeyne.datascrambler.domain.Generator;
 import com.kevindeyne.datascrambler.domain.ProdConnection;
 import com.kevindeyne.datascrambler.helper.PrintCmds;
 import com.kevindeyne.datascrambler.service.ConfigService;
-import com.kevindeyne.datascrambler.shell.InputReader;
 import org.jooq.Field;
 import org.jooq.Table;
 import org.springframework.shell.standard.ShellComponent;
@@ -32,10 +31,16 @@ public class CommandController {
     @ShellMethod("Builds the model")
     public String build() {
         ProdConnection prodConnection = null;
+
         try {
             Config config = configService.loadConfig();
             prodConnection = config.setupProdConnection();
+        } catch (Exception e) {
+            configService.loadConfig(true);
+            return build();
+        }
 
+        try {
             List<Table<?>> tables = prodConnection.getAllTables();
             for(Table<?> table : tables) {
                 log();

@@ -1,8 +1,9 @@
 package com.kevindeyne.datascrambler.shell;
 
+import com.kevindeyne.datascrambler.utils.ValidationUtils;
 import org.jline.reader.LineReader;
-import org.springframework.stereotype.Component;
 import org.springframework.util.StringUtils;
+
 import java.util.*;
 
 public class InputReader {
@@ -25,11 +26,11 @@ public class InputReader {
         this.mask = mask != null ? mask : DEFAULT_MASK;
     }
 
-    public String prompt(String  prompt) {
+    public String prompt(String prompt) {
         return prompt(prompt, null, true);
     }
 
-    public String prompt(String  prompt, String defaultValue) {
+    public String prompt(String prompt, String defaultValue) {
         return prompt(prompt, defaultValue, true);
     }
 
@@ -41,7 +42,7 @@ public class InputReader {
      * @param echo
      * @return
      */
-    public String prompt(String  prompt, String defaultValue, boolean echo) {
+    public String prompt(String prompt, String defaultValue, boolean echo) {
         String answer = "";
 
         if (echo) {
@@ -55,6 +56,60 @@ public class InputReader {
         return answer;
     }
 
+    public String getString(String prompt) {
+        return getString(prompt, null);
+    }
+
+    public String getString(String prompt, String defaultValue) {
+        String resultString = null;
+        do {
+            String result = prompt(prompt, defaultValue);
+            if (StringUtils.hasText(result)) {
+                resultString = result;
+            } else {
+                shellHelper.printWarning("Can not be empty. Please enter valid value.");
+            }
+        } while (resultString == null);
+        return resultString;
+    }
+
+    public Integer getInteger(String prompt, Integer defaultValue) {
+        String resultString = null;
+        do {
+            String result = prompt(prompt, defaultValue.toString());
+            if (StringUtils.hasText(result)) {
+                if (ValidationUtils.isInteger(result)) {
+                    resultString = result;
+                } else {
+                    shellHelper.printWarning("Not a valid port number. Please enter valid value.");
+                }
+            } else {
+                shellHelper.printWarning("Can not be empty. Please enter valid value.");
+            }
+        } while (resultString == null);
+        return Integer.parseInt(resultString);
+    }
+
+    public String getOption(String prompt, List<String> all) {
+        String resultString = null;
+        do {
+            String result = promptWithOptions(prompt, null, all);
+            if (StringUtils.hasText(result)) {
+                resultString = result;
+            } else {
+                shellHelper.printWarning("Can not be empty. Please enter valid value.");
+            }
+        } while (resultString == null);
+        return resultString;
+    }
+
+    public String getPassword(String prompt) {
+        this.mask = DEFAULT_MASK;
+        String returnValue = getString(prompt, null);
+        this.mask = null;
+        return returnValue;
+    }
+
     /**
      * Loops until one of the `options` is provided. Pressing return is equivalent to
      * returning `defaultValue`.
@@ -62,10 +117,8 @@ public class InputReader {
      * Passing null for defaultValue signifies that there is no default value.<br/>
      * Passing "" or null among optionsAsList means that empty answer is allowed, in these cases this method returns
      * empty String "" as the result of its execution.
-     *
-     *
      */
-    public String promptWithOptions(String  prompt, String defaultValue, List<String> optionsAsList) {
+    public String promptWithOptions(String prompt, String defaultValue, List<String> optionsAsList) {
         String answer;
         List<String> allowedAnswers = new ArrayList<>(optionsAsList);
         if (StringUtils.hasText(defaultValue)) {
@@ -88,10 +141,10 @@ public class InputReader {
             if ("".equals(option) || option == null) {
                 val = "''";
             }
-            if (defaultValue != null ) {
-               if (defaultValue.equals(option) || (defaultValue.equals("") && option == null)) {
-                   val = shellHelper.getInfoMessage(val);
-               }
+            if (defaultValue != null) {
+                if (defaultValue.equals(option) || (defaultValue.equals("") && option == null)) {
+                    val = shellHelper.getInfoMessage(val);
+                }
             }
             result.add(val);
         }
@@ -100,7 +153,6 @@ public class InputReader {
 
     /**
      * Loops until one value from the list of options is selected, printing each option on its own line.
-     *
      */
     public String selectFromList(String headingMessage, String promptMessage, Map<String, String> options, boolean ignoreCase, String defaultValue) {
         String answer;
@@ -110,7 +162,7 @@ public class InputReader {
         }
         shellHelper.print(String.format("%s: ", headingMessage));
         do {
-            for (Map.Entry<String, String> option: options.entrySet()) {
+            for (Map.Entry<String, String> option : options.entrySet()) {
                 String defaultMarker = null;
                 if (defaultValue != null) {
                     if (option.getKey().equals(defaultValue)) {
@@ -132,16 +184,15 @@ public class InputReader {
         return answer;
     }
 
-    private boolean containsString(Set <String> l, String s, boolean ignoreCase){
+    private boolean containsString(Set<String> l, String s, boolean ignoreCase) {
         if (!ignoreCase) {
             return l.contains(s);
         }
         Iterator<String> it = l.iterator();
-        while(it.hasNext()) {
-            if(it.next().equalsIgnoreCase(s))
+        while (it.hasNext()) {
+            if (it.next().equalsIgnoreCase(s))
                 return true;
         }
         return false;
     }
-
 }

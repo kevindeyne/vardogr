@@ -3,111 +3,72 @@ package com.kevindeyne.datascrambler.service;
 import com.grack.nanojson.JsonObject;
 import com.grack.nanojson.JsonParser;
 import com.grack.nanojson.JsonParserException;
-import com.grack.nanojson.JsonWriter;
 import com.kevindeyne.datascrambler.domain.Config;
+import com.kevindeyne.datascrambler.exceptions.ConfigFileException;
+import com.kevindeyne.datascrambler.helper.SupportedDBType;
 import com.kevindeyne.datascrambler.shell.InputReader;
 import com.kevindeyne.datascrambler.shell.ShellHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.stream.Stream;
 
 @Service
 public class ConfigService {
 
     @Lazy
     @Autowired
-    ShellHelper shellHelper;
+    private ShellHelper shellHelper;
 
     @Lazy
     @Autowired
-    InputReader inputReader;
+    private InputReader input;
+
+    @Autowired
+    private FileService fileService;
 
     @Autowired
     private EncryptService encryptService;
 
     public static final String CONFIG_JSON = "config.json";
 
-
-    public boolean doesFileExist() {
-        File f = new File(CONFIG_JSON);
-        if (f.exists() && !f.isDirectory()) {
-            shellHelper.printSuccess("Config file found.");
-            return true;
-        } else {
-            shellHelper.printWarning("No config file found. Please provide us with some information on your source database.");
-            return false;
-        }
-    }
-
     public Config loadConfig() {
-        JsonObject configObj = new JsonObject();
-        if (doesFileExist()) {
-            configObj = readConfigObj();
-        } else {
-            //setup
-            configObj.put("host", promptUser("Host"));
-            configObj.put("port", Integer.parseInt(promptUser("Port")));
-            configObj.put("username", promptUser("Username"));
-            configObj.put("password", encryptService.encrypt(promptUser("Password")));
-            configObj.put("dbName", promptUser("Database name"));
-            configObj.put("dbType", promptUser("DB type"));
-
-            persistConfig(configObj);
-        }
-
-        return new Config(configObj, encryptService);
+        return loadConfig(false);
     }
 
-    private void persistConfig(JsonObject configObj) {
-        PrintWriter writer = null;
+    public Config loadConfig(boolean force) {
+        final JsonObject configObj;
         try {
-            writer = new PrintWriter(CONFIG_JSON, "UTF-8");
-            writer.println(JsonWriter.string(configObj));
-        } catch (FileNotFoundException e) {
-            throw new RuntimeException("Impossible to create a config file, check if directory is not read-only.");
-        } catch (Exception e) {
-            throw new RuntimeException("Could not read file: " + e.getMessage());
-        } finally {
-            if (writer != null) {
-                writer.close();
-            }
-        }
-    }
-
-    private JsonObject readConfigObj() {
-        StringBuilder sb = new StringBuilder();
-        try (Stream<String> stream = Files.lines(Paths.get(CONFIG_JSON))) {
-            stream.forEach(s -> sb.append(s));
-        } catch (IOException e) {
-            throw new RuntimeException("Could not read config file: " + e.getMessage());
-        }
-
-        try {
-            return JsonParser.object().from(sb.toString());
-        } catch (JsonParserException e) {
-            throw new RuntimeException("Could not read config file: " + e.getMessage());
-        }
-    }
-
-    private String promptUser(String prompt) {
-        String resultString = null;
-        do {
-            String result = inputReader.prompt(prompt);
-            if (StringUtils.hasText(result)) {
-                resultString = result;
+            if (!force && fileService.doesFileExist(CONFIG_JSON)) {
+                configObj = readConfigObj();
             } else {
-                shellHelper.printWarning("Can not be empty. Please enter valid value.");
+                configObj = new JsonObject();
+                configObj.put("host", input.getString("Host", "localhost"));
+                configObj.put("port", input.getInteger("Port", 3306));
+                configObj.put("username", input.getString("Username"));
+                configObj.put("password", encryptService.encrypt(input.getPassword("Password")));
+                configObj.put("dbName", input.getString("Database name"));
+                configObj.put("dbType", input.getOption("DB type", SupportedDBType.all()));
+                fileService.writeToFile(configObj, CONFIG_JSON);
             }
-        } while (resultString == null);
-        return resultString;
+        } catch (Exception e) {
+            shellHelper.printError("Config file corrupt. Restarting file creation ...");
+            return loadConfig(fileService.deleteFile(CONFIG_JSON));
+        }
+
+        try {
+            return new Config(configObj, encryptService);
+        } catch (Exception e) {
+            shellHelper.printError("Config file has corrupted content. Restarting file creation ...");
+            return loadConfig(fileService.deleteFile(CONFIG_JSON));
+        }
+    }
+
+    private JsonObject readConfigObj() throws ConfigFileException {
+        String fileContents = fileService.loadFile(CONFIG_JSON);
+        try {
+            return JsonParser.object().from(fileContents);
+        } catch (JsonParserException e) {
+            throw new ConfigFileException("Could not read config file: " + e.getMessage(), e);
+        }
     }
 }

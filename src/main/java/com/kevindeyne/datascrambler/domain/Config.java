@@ -3,13 +3,15 @@ package com.kevindeyne.datascrambler.domain;
 import com.grack.nanojson.JsonObject;
 import com.kevindeyne.datascrambler.helper.SupportedDBType;
 import com.kevindeyne.datascrambler.service.EncryptService;
+import lombok.Data;
 
 import java.sql.SQLException;
 
+@Data
 public class Config {
 
-    private String username = "root";
-    private String password = "";
+    private String username;
+    private String password;
     private Integer port;
     private String host;
     private String dbName;
