@@ -6,6 +6,7 @@ import com.kevindeyne.datascrambler.exceptions.ConfigFileException;
 import com.kevindeyne.datascrambler.shell.ShellHelper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -15,6 +16,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
+@Service
 public class FileService {
 
     private static final String UTF_8 = "UTF-8";
