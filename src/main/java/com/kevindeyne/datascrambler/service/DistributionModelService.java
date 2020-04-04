@@ -1,6 +1,6 @@
 package com.kevindeyne.datascrambler.service;
 
-import com.kevindeyne.datascrambler.domain.Generator;
+import com.kevindeyne.datascrambler.domain.distributionmodel.Generator;
 import com.kevindeyne.datascrambler.domain.ProdConnection;
 import com.kevindeyne.datascrambler.domain.distributionmodel.DistributionModel;
 import com.kevindeyne.datascrambler.domain.distributionmodel.FieldData;
@@ -17,7 +17,6 @@ import org.springframework.stereotype.Service;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -38,27 +37,27 @@ public class DistributionModelService {
             CountDownLatch latch = new CountDownLatch(allTables.size());
 
             try (ProgressBar pb = new ProgressBar("Building model", calculateTotalFieldsForModel(allTables))) {
-            allTables.forEach(table -> threadPool.execute(() -> {
-                try (DSLContext dsl = using(new DefaultConfiguration().derive(dataSource))) {
-                    TableData tableData = new TableData(table.getName());
-                    tableData.setTotalCount(prodConnection.count(tableData.getTableName(), dsl));
-                        Arrays.stream(table.fields()).forEach(f -> {
-                            FieldData fieldData = new FieldData(f.getName());
-                            fieldData.setGenerator(determineGenerator(f));
-                            fieldData.setValueDistribution(prodConnection.determineDistribution(table, f, tableData.getTotalCount(), dsl));
+                allTables.forEach(table -> threadPool.execute(() -> {
+                    try (DSLContext dsl = using(new DefaultConfiguration().derive(dataSource))) {
+                        TableData tableData = new TableData(table.getName());
+                        tableData.setTotalCount(prodConnection.count(tableData.getTableName(), dsl));
+                            Arrays.stream(table.fields()).forEach(f -> {
+                                FieldData fieldData = new FieldData(f.getName());
+                                fieldData.setGenerator(determineGenerator(f));
+                                fieldData.setValueDistribution(prodConnection.determineDistribution(table, f, tableData.getTotalCount(), dsl));
 
-                            //TODO determine if field is FK with other table
+                                //TODO determine if field is FK with other table
 
-                            tableData.getFieldData().add(fieldData);
-                            pb.step();
-                        });
+                                tableData.getFieldData().add(fieldData);
+                                pb.step();
+                            });
 
-                    model.getTables().add(tableData);
-                } finally {
-                    latch.countDown();
-                }
-            }));
-            latch.await();
+                        model.getTables().add(tableData);
+                    } finally {
+                        latch.countDown();
+                    }
+                }));
+                latch.await();
             }
             return model;
         } catch (Exception e) {
