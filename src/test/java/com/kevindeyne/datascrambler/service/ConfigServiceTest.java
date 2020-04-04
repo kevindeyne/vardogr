@@ -46,7 +46,7 @@ public class ConfigServiceTest {
 
     @Test
     public void testConfigSetupHappyFlow_NewFile() {
-        Mockito.when(fileService.doesFileExist(anyString())).thenReturn(false);
+        Mockito.when(fileService.doesFileExist(anyString(), anyString(), anyString())).thenReturn(false);
 
         Mockito.when(input.getString("Host", "localhost")).thenReturn(SAMPLE_HOST);
         Mockito.when(input.getInteger("Port", 3306)).thenReturn(SAMPLE_PORT);
@@ -61,17 +61,17 @@ public class ConfigServiceTest {
         Config config = service.loadConfig();
 
         assertNotNull(config);
-        assertEquals(SAMPLE_HOST, config.getHost());
-        assertEquals(SAMPLE_PORT, config.getPort(), 0);
-        assertEquals(SAMPLE_DB_NAME, config.getDbName());
-        assertEquals(SAMPLE_USERNAME, config.getUsername());
-        assertEquals(SAMPLE_RAW_PASSWORD, config.getPassword());
-        assertEquals(SupportedDBType.MARIADB, config.getDbType());
+        assertEquals(SAMPLE_HOST, config.getHostSource());
+        assertEquals(SAMPLE_PORT, config.getPortSource(), 0);
+        assertEquals(SAMPLE_DB_NAME, config.getDbNameSource());
+        assertEquals(SAMPLE_USERNAME, config.getUsernameSource());
+        assertEquals(SAMPLE_RAW_PASSWORD, config.getPasswordSource());
+        assertEquals(SupportedDBType.MARIADB, config.getDbTypeSource());
     }
 
     @Test
     public void testConfigSetupHappyFlow_ExistingFile() throws Exception {
-        Mockito.when(fileService.doesFileExist(anyString())).thenReturn(true);
+        Mockito.when(fileService.doesFileExist(anyString(), anyString(), anyString())).thenReturn(true);
         Mockito.when(fileService.loadFile(anyString())).thenReturn(SAMPLE_JSON_CONFIG);
 
         Mockito.when(encryptService.decrypt(anyString())).thenReturn(SAMPLE_RAW_PASSWORD);
@@ -79,17 +79,17 @@ public class ConfigServiceTest {
         Config config = service.loadConfig();
 
         assertNotNull(config);
-        assertEquals(SAMPLE_HOST, config.getHost());
-        assertEquals(SAMPLE_PORT, config.getPort(), 0);
-        assertEquals(SAMPLE_DB_NAME, config.getDbName());
-        assertEquals(SAMPLE_USERNAME, config.getUsername());
-        assertEquals(SAMPLE_RAW_PASSWORD, config.getPassword());
-        assertEquals(SupportedDBType.MARIADB, config.getDbType());
+        assertEquals(SAMPLE_HOST, config.getHostSource());
+        assertEquals(SAMPLE_PORT, config.getPortSource(), 0);
+        assertEquals(SAMPLE_DB_NAME, config.getDbNameSource());
+        assertEquals(SAMPLE_USERNAME, config.getUsernameSource());
+        assertEquals(SAMPLE_RAW_PASSWORD, config.getPasswordSource());
+        assertEquals(SupportedDBType.MARIADB, config.getDbTypeSource());
     }
 
     @Test
     public void testFileCorrupted() throws Exception {
-        Mockito.when(fileService.doesFileExist(anyString())).thenReturn(true);
+        Mockito.when(fileService.doesFileExist(anyString(), anyString(), anyString())).thenReturn(true);
         Mockito.when(fileService.loadFile(anyString())).thenReturn("asdljasldkjaslkdjaslkdj");
 
         Mockito.when(input.getString("Host", "localhost")).thenReturn(SAMPLE_HOST);
@@ -105,17 +105,17 @@ public class ConfigServiceTest {
         Config config = service.loadConfig();
 
         assertNotNull(config);
-        assertEquals(SAMPLE_HOST, config.getHost());
-        assertEquals(SAMPLE_PORT, config.getPort(), 0);
-        assertEquals(SAMPLE_DB_NAME, config.getDbName());
-        assertEquals(SAMPLE_USERNAME, config.getUsername());
-        assertEquals(SAMPLE_RAW_PASSWORD, config.getPassword());
-        assertEquals(SupportedDBType.MARIADB, config.getDbType());
+        assertEquals(SAMPLE_HOST, config.getHostSource());
+        assertEquals(SAMPLE_PORT, config.getPortSource(), 0);
+        assertEquals(SAMPLE_DB_NAME, config.getDbNameSource());
+        assertEquals(SAMPLE_USERNAME, config.getUsernameSource());
+        assertEquals(SAMPLE_RAW_PASSWORD, config.getPasswordSource());
+        assertEquals(SupportedDBType.MARIADB, config.getDbTypeSource());
     }
 
     @Test
     public void testFileCorrupted2() throws Exception {
-        Mockito.when(fileService.doesFileExist(anyString())).thenReturn(true);
+        Mockito.when(fileService.doesFileExist(anyString(), anyString(), anyString())).thenReturn(true);
         Mockito.when(fileService.loadFile(anyString())).thenReturn("{\"glossary\": {\"title\": \"example glossary\"}}\n");
 
         Mockito.when(input.getString("Host", "localhost")).thenReturn(SAMPLE_HOST);
@@ -131,12 +131,12 @@ public class ConfigServiceTest {
         Config config = service.loadConfig();
 
         assertNotNull(config);
-        assertEquals(SAMPLE_HOST, config.getHost());
-        assertEquals(SAMPLE_PORT, config.getPort(), 0);
-        assertEquals(SAMPLE_DB_NAME, config.getDbName());
-        assertEquals(SAMPLE_USERNAME, config.getUsername());
-        assertEquals(SAMPLE_RAW_PASSWORD, config.getPassword());
-        assertEquals(SupportedDBType.MARIADB, config.getDbType());
+        assertEquals(SAMPLE_HOST, config.getHostSource());
+        assertEquals(SAMPLE_PORT, config.getPortSource(), 0);
+        assertEquals(SAMPLE_DB_NAME, config.getDbNameSource());
+        assertEquals(SAMPLE_USERNAME, config.getUsernameSource());
+        assertEquals(SAMPLE_RAW_PASSWORD, config.getPasswordSource());
+        assertEquals(SupportedDBType.MARIADB, config.getDbTypeSource());
     }
 
 

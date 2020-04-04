@@ -1,6 +1,7 @@
 package com.kevindeyne.datascrambler.domain;
 
 import com.google.gson.JsonObject;
+import com.kevindeyne.datascrambler.dao.SourceConnectionDao;
 import com.kevindeyne.datascrambler.exceptions.ConnectionFailureException;
 import com.kevindeyne.datascrambler.helper.SupportedDBType;
 import com.kevindeyne.datascrambler.service.EncryptService;
@@ -11,25 +12,47 @@ import java.sql.SQLException;
 @Data
 public class Config {
 
-    private String username;
-    private String password;
-    private Integer port;
-    private String host;
-    private String dbName;
-    private SupportedDBType dbType;
+    private String usernameSource;
+    private String passwordSource;
+    private Integer portSource;
+    private String hostSource;
+    private String dbNameSource;
+    private SupportedDBType dbTypeSource;
+
+    private String usernameTarget;
+    private String passwordTarget;
+    private Integer portTarget;
+    private String hostTarget;
+    private String dbNameTarget;
+    private SupportedDBType dbTypeTarget;
+
+    public static final String HOST_SOURCE = "host-source";
+    public static final String PORT_SOURCE = "port-source";
+    public static final String USERNAME_SOURCE = "username-source";
+    public static final String PASSWORD_SOURCE = "password-source";
+    public static final String DB_NAME_SOURCE = "dbName-source";
+    public static final String DB_TYPE_SOURCE = "dbType-source";
+    public static final String HOST_TARGET = "host-target";
+
+    public static final String PORT_TARGET = "port-target";
+    public static final String USERNAME_TARGET = "username-target";
+    public static final String PASSWORD_TARGET = "password-target";
+    public static final String DB_NAME_TARGET = "dbName-target";
+    public static final String DB_TYPE_TARGET = "dbType-target";
+    public static final String EMPTY = "^";
 
     public Config(final JsonObject obj, final EncryptService encryptService) {
-        host = obj.get("host").getAsString();
-        username = obj.get("username").getAsString();
-        password = encryptService.decrypt(obj.get("password").getAsString());
-        port = obj.get("port").getAsInt();
-        dbName = obj.get("dbName").getAsString();
-        dbType = SupportedDBType.valueOf(obj.get("dbType").getAsString().toUpperCase());
+        hostSource = obj.get(HOST_SOURCE).getAsString();
+        usernameSource = obj.get(USERNAME_SOURCE).getAsString();
+        passwordSource = encryptService.decrypt(obj.get(PASSWORD_SOURCE).getAsString());
+        portSource = obj.get(PORT_SOURCE).getAsInt();
+        dbNameSource = obj.get(DB_NAME_SOURCE).getAsString();
+        dbTypeSource = SupportedDBType.valueOf(obj.get(DB_TYPE_SOURCE).getAsString().toUpperCase());
     }
 
-    public ProdConnection setupProdConnection() throws ConnectionFailureException {
-        String url = setupUrl(dbType.getPlaceholder(), host, port, dbName);
-        ProdConnection connection = new ProdConnection(url, username, password);
+    public SourceConnectionDao setupSourceConnection() throws ConnectionFailureException {
+        String url = setupUrl(dbTypeSource.getPlaceholder(), hostSource, portSource, dbNameSource);
+        SourceConnectionDao connection = new SourceConnectionDao(url, usernameSource, passwordSource);
         try {
             if (connection.testConnection()) return connection;
         } catch(SQLException e) {

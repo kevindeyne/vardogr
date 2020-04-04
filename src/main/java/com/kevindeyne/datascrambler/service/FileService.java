@@ -27,13 +27,13 @@ public class FileService {
     @Autowired
     private ShellHelper shellHelper;
 
-    public boolean doesFileExist(String file) {
+    public boolean doesFileExist(String file, String successMessage, String failureMessage) {
         File f = new File(file);
         if (f.exists() && !f.isDirectory()) {
-            shellHelper.printSuccess("Config file found.");
+            shellHelper.printSuccess(successMessage);
             return true;
         } else {
-            shellHelper.printWarning("No config file found. Please provide us with some information on your source database.");
+            shellHelper.printWarning(failureMessage);
             return false;
         }
     }

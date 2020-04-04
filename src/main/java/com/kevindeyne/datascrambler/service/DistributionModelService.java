@@ -1,7 +1,7 @@
 package com.kevindeyne.datascrambler.service;
 
 import com.kevindeyne.datascrambler.domain.distributionmodel.Generator;
-import com.kevindeyne.datascrambler.domain.ProdConnection;
+import com.kevindeyne.datascrambler.dao.SourceConnectionDao;
 import com.kevindeyne.datascrambler.domain.distributionmodel.DistributionModel;
 import com.kevindeyne.datascrambler.domain.distributionmodel.FieldData;
 import com.kevindeyne.datascrambler.domain.distributionmodel.TableData;
@@ -28,23 +28,23 @@ public class DistributionModelService {
 
     private ExecutorService threadPool = Executors.newFixedThreadPool(10);
 
-    public DistributionModel create(ProdConnection prodConnection) throws ModelCreationException {
-        HikariDataSource dataSource = prodConnection.toDataSource();
+    public DistributionModel create(SourceConnectionDao sourceConnectionDao) throws ModelCreationException {
+        HikariDataSource dataSource = sourceConnectionDao.toDataSource();
         try {
             DistributionModel model = new DistributionModel();
 
-            List<Table<?>> allTables = prodConnection.getAllTables(dataSource);
+            List<Table<?>> allTables = sourceConnectionDao.getAllTables(dataSource);
             CountDownLatch latch = new CountDownLatch(allTables.size());
 
             try (ProgressBar pb = new ProgressBar("Building model", calculateTotalFieldsForModel(allTables))) {
                 allTables.forEach(table -> threadPool.execute(() -> {
                     try (DSLContext dsl = using(new DefaultConfiguration().derive(dataSource))) {
                         TableData tableData = new TableData(table.getName());
-                        tableData.setTotalCount(prodConnection.count(tableData.getTableName(), dsl));
+                        tableData.setTotalCount(sourceConnectionDao.count(tableData.getTableName(), dsl));
                             Arrays.stream(table.fields()).forEach(f -> {
                                 FieldData fieldData = new FieldData(f.getName());
                                 fieldData.setGenerator(determineGenerator(f));
-                                fieldData.setValueDistribution(prodConnection.determineDistribution(table, f, tableData.getTotalCount(), dsl));
+                                fieldData.setValueDistribution(sourceConnectionDao.determineDistribution(table, f, tableData.getTotalCount(), dsl));
 
                                 //TODO determine if field is FK with other table
 

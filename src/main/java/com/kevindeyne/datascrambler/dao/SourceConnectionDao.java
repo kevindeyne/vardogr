@@ -1,27 +1,29 @@
-package com.kevindeyne.datascrambler.domain;
+package com.kevindeyne.datascrambler.dao;
 
 import com.kevindeyne.datascrambler.domain.distributionmodel.ValueDistribution;
-import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 import org.jooq.*;
-import org.jooq.Table;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
 
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.List;
-import java.sql.*;
-import static org.jooq.impl.DSL.*;
+
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.using;
 
 @Data
-public class ProdConnection {
+public class SourceConnectionDao {
 
     private final String url;
     private final String username;
     private final String password;
 
-    public ProdConnection(String url, String username, String password) {
+    public SourceConnectionDao(String url, String username, String password) {
         this.url = url;
         this.username = username;
         this.password = password;
