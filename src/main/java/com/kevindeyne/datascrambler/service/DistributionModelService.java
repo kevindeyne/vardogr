@@ -37,12 +37,11 @@ public class DistributionModelService {
             List<Table<?>> allTables = prodConnection.getAllTables(dataSource);
             CountDownLatch latch = new CountDownLatch(allTables.size());
 
+            try (ProgressBar pb = new ProgressBar("Building model", calculateTotalFieldsForModel(allTables))) {
             allTables.forEach(table -> threadPool.execute(() -> {
                 try (DSLContext dsl = using(new DefaultConfiguration().derive(dataSource))) {
                     TableData tableData = new TableData(table.getName());
                     tableData.setTotalCount(prodConnection.count(tableData.getTableName(), dsl));
-
-                    try (ProgressBar pb = new ProgressBar("Building model for " + tableData.getTableName(), table.fields().length)) {
                         Arrays.stream(table.fields()).forEach(f -> {
                             FieldData fieldData = new FieldData(f.getName());
                             fieldData.setGenerator(determineGenerator(f));
@@ -53,18 +52,24 @@ public class DistributionModelService {
                             tableData.getFieldData().add(fieldData);
                             pb.step();
                         });
-                    }
+
                     model.getTables().add(tableData);
                 } finally {
                     latch.countDown();
                 }
             }));
-
             latch.await();
+            }
             return model;
         } catch (Exception e) {
             throw new ModelCreationException("Failure while setting up distribution model", e);
         }
+    }
+
+    private int calculateTotalFieldsForModel(List<Table<?>> allTables) {
+        int totalFieldsToModel = 0;
+        for(Table<?> t : allTables) totalFieldsToModel += t.fields().length;
+        return totalFieldsToModel;
     }
 
     private Generator determineGenerator(Field<?> f) {
