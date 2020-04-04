@@ -1,36 +1,47 @@
 package com.kevindeyne.datascrambler.commands;
 
 import com.kevindeyne.datascrambler.domain.Config;
-import com.kevindeyne.datascrambler.domain.Distribution;
-import com.kevindeyne.datascrambler.domain.Generator;
+import com.kevindeyne.datascrambler.domain.distributionmodel.DistributionModel;
 import com.kevindeyne.datascrambler.domain.ProdConnection;
+import com.kevindeyne.datascrambler.exceptions.ConfigFileException;
+import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
 import com.kevindeyne.datascrambler.helper.PrintCmds;
 import com.kevindeyne.datascrambler.service.ConfigService;
-import org.jooq.Field;
-import org.jooq.Table;
+import com.kevindeyne.datascrambler.service.DistributionModelService;
+import com.kevindeyne.datascrambler.service.FileService;
+import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 
 import javax.annotation.PostConstruct;
-import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 @ShellComponent
 public class CommandController {
 
-    private ConfigService configService;
+    private static final String DISTRIBUTION_MODEL_JSON = "distribution-model.json";
 
-    public CommandController(ConfigService configService) {
+    private ConfigService configService;
+    private DistributionModelService distributionModelService;
+    private FileService fileService;
+
+    public CommandController(ConfigService configService,
+                             DistributionModelService distributionModelService,
+                             FileService fileService) {
         this.configService = configService;
+        this.distributionModelService = distributionModelService;
+        this.fileService = fileService;
     }
 
     @PostConstruct
     public void init() {
-        log("Use build");
+        System.out.println(PrintCmds.green("Use build"));
     }
 
     @ShellMethod("Builds the model")
     public String build() {
-        ProdConnection prodConnection = null;
+        final ProdConnection prodConnection;
 
         try {
             Config config = configService.loadConfig();
@@ -41,38 +52,14 @@ public class CommandController {
         }
 
         try {
-            List<Table<?>> tables = prodConnection.getAllTables();
-            for(Table<?> table : tables) {
-                log();
-                Double count = Double.valueOf(prodConnection.count(table.getName()));
-                log("Count ("+ table.getName() +"): " + count);
-
-                for (Field<?> f : table.fields()) {
-                    Generator generator = Generator.determineGenerator(f);
-                    Distribution distribution = prodConnection.determineDistribution(table, f, count);
-
-                    //TODO determine if field is FK with other table
-                    log(f.getName() + " - " + generator + " - " + distribution);
-                }
-            }
-
-            return "";
-        } catch (Exception e) {
-            e.printStackTrace();
+            DistributionModel model = distributionModelService.create(prodConnection);
+            fileService.writeToFile(model.toJsonFile(), DISTRIBUTION_MODEL_JSON);
+            return "Model created. You can now use this model to generate data. Do this by calling generate";
+        } catch (ModelCreationException | ConfigFileException e) {
+            e.getWrappedException().printStackTrace();
             return "Error: " + e.getMessage();
         } finally {
-            if(prodConnection != null) {
-                prodConnection.clearConnection();
-            }
+          //
         }
     }
-
-    private void log() {
-        log("");
-    }
-
-    private void log(String string) {
-        System.out.println(PrintCmds.green(string));
-    }
-
 }

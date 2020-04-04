@@ -1,4 +1,4 @@
-package com.kevindeyne.datascrambler;
+package com.kevindeyne.datascrambler.service;
 
 import com.kevindeyne.datascrambler.service.EncryptService;
 import org.junit.Before;

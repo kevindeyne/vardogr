@@ -1,10 +1,10 @@
 package com.kevindeyne.datascrambler.exceptions;
 
-public class ConfigFileException extends Exception implements ExceptionWrapper {
+public class ModelCreationException extends Exception implements ExceptionWrapper {
 
     private final Exception wrappedException;
 
-    public ConfigFileException(String message, Exception e) {
+    public ModelCreationException(String message, Exception e) {
         super(message);
         this.wrappedException = e;
     }

@@ -1,54 +1,67 @@
 package com.kevindeyne.datascrambler.domain;
 
+import com.kevindeyne.datascrambler.domain.distributionmodel.ValueDistribution;
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+import lombok.Data;
 import org.jooq.*;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
 
+import javax.sql.DataSource;
 import java.util.List;
 import java.sql.*;
 import static org.jooq.impl.DSL.*;
 
+@Data
 public class ProdConnection {
 
-    private Connection connection;
-    private DSLContext dsl;
+    private final String url;
+    private final String username;
+    private final String password;
 
-    public void setupConnection(String url, String userName, String password) throws SQLException {
-        this.connection = DriverManager.getConnection(url, userName, password);
-        this.dsl = using(new DefaultConfiguration().derive(connection));
+    public ProdConnection(String url, String username, String password) {
+        this.url = url;
+        this.username = username;
+        this.password = password;
     }
 
-    public boolean testConnection() {
+    public boolean testConnection() throws SQLException {
+        Connection connection = DriverManager.getConnection(url, username, password);
+        DSLContext dsl = using(new DefaultConfiguration().derive(connection));
         Integer[] result = dsl.selectOne().fetch().intoArray(0, Integer.class);
         return result.length == 1 && result[0] == 1;
     }
 
-    public List<Table<?>> getAllTables() {
-        return dsl.meta().getTables();
+    public List<Table<?>> getAllTables(DataSource dataSource) {
+        try (DSLContext dsl = using(new DefaultConfiguration().derive(dataSource))) {
+            return dsl.meta().getTables();
+        }
     }
 
-    public Long count(String tableName) {
+    public Long count(String tableName, DSLContext dsl) {
         return dsl
                         .selectCount()
                         .from(DSL.table(tableName))
                         .fetchOne(0, long.class);
     }
 
-    public void clearConnection() {
-        try {
-        this.connection.close();
-        } catch (Exception e) {
-            return;
-        }
-    }
-
-    public Distribution determineDistribution(Table<?> table, Field<?> field, Double totalCount) {
+    public ValueDistribution determineDistribution(Table<?> table, Field<?> field, long totalCount, DSLContext dsl) {
         Field<Object> f = field(field.getName());
         Result<? extends Record2<?, Integer>> rawDistribution = dsl.select(f, DSL.count())
                 .from(DSL.table(table.getName()))
                 .groupBy(f)
                 .fetch();
-        return Distribution.from(rawDistribution, totalCount);
+        return new ValueDistribution()
+                .from(rawDistribution, totalCount);
+    }
+
+    public HikariDataSource toDatasource() {
+        HikariDataSource ds = new HikariDataSource();
+        ds.setJdbcUrl(this.url);
+        ds.setPassword(this.password);
+        ds.setUsername(this.username);
+        return ds;
     }
 }

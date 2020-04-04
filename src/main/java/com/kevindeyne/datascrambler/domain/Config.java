@@ -1,8 +1,10 @@
 package com.kevindeyne.datascrambler.domain;
 
 import com.grack.nanojson.JsonObject;
+import com.kevindeyne.datascrambler.exceptions.ConnectionFailureException;
 import com.kevindeyne.datascrambler.helper.SupportedDBType;
 import com.kevindeyne.datascrambler.service.EncryptService;
+import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 
 import java.sql.SQLException;
@@ -26,13 +28,15 @@ public class Config {
         dbType = SupportedDBType.valueOf(obj.getString("dbType").toUpperCase());
     }
 
-    public ProdConnection setupProdConnection() throws SQLException {
-        ProdConnection connection = new ProdConnection();
-
-        connection.setupConnection(setupUrl(dbType.getPlaceholder(), host, port, dbName), username, password);
-        if (connection.testConnection()) return connection;
-
-        throw new RuntimeException("Could not connect to PROD DB");
+    public ProdConnection setupProdConnection() throws ConnectionFailureException {
+        String url = setupUrl(dbType.getPlaceholder(), host, port, dbName);
+        ProdConnection connection = new ProdConnection(url, username, password);
+        try {
+            if (connection.testConnection()) return connection;
+        } catch(SQLException e) {
+            throw new ConnectionFailureException("Could not connect to PROD DB");
+        }
+        throw new ConnectionFailureException("Could not connect to PROD DB");
     }
 
     private String setupUrl(String urlPlaceholder, String host, Integer port, String dbName) {
