@@ -57,7 +57,7 @@ public class ProdConnection {
                 .from(rawDistribution, totalCount);
     }
 
-    public HikariDataSource toDatasource() {
+    public HikariDataSource toDataSource() {
         HikariDataSource ds = new HikariDataSource();
         ds.setJdbcUrl(this.url);
         ds.setPassword(this.password);

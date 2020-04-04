@@ -1,8 +1,9 @@
 package com.kevindeyne.datascrambler.domain.distributionmodel;
 
-import com.grack.nanojson.JsonObject;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import lombok.Data;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -14,6 +15,6 @@ public class DistributionModel {
     private List<TableData> tables = synchronizedList(new ArrayList<>());
 
     public JsonObject toJsonFile() {
-        return new JsonObject();
+        return JsonParser.parseString(new Gson().toJson(this)).getAsJsonObject();
     }
 }

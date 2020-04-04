@@ -1,7 +1,8 @@
 package com.kevindeyne.datascrambler.service;
 
-import com.grack.nanojson.JsonObject;
-import com.grack.nanojson.JsonWriter;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
 import com.kevindeyne.datascrambler.exceptions.ConfigFileException;
 import com.kevindeyne.datascrambler.shell.ShellHelper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,6 +21,7 @@ import java.util.stream.Stream;
 public class FileService {
 
     private static final String UTF_8 = "UTF-8";
+    private static final Gson GSON = new GsonBuilder().create();
 
     @Lazy
     @Autowired
@@ -52,7 +54,7 @@ public class FileService {
 
     public void writeToFile(JsonObject configObj, String file) throws ConfigFileException {
         try (PrintWriter writer = new PrintWriter(file, UTF_8)) {
-            writer.println(JsonWriter.string(configObj));
+            writer.println(GSON.toJson(configObj));
         } catch (FileNotFoundException e) {
             throw new ConfigFileException("Impossible to create a config file, check if directory is not read-only.", e);
         } catch (Exception e) {

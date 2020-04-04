@@ -1,5 +1,7 @@
 package com.kevindeyne.datascrambler.shell;
 
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.kevindeyne.datascrambler.utils.ValidationUtils;
 import org.jline.reader.LineReader;
 import org.springframework.util.StringUtils;
@@ -9,7 +11,6 @@ import java.util.*;
 public class InputReader {
 
     public static final Character DEFAULT_MASK = '*';
-
     private Character mask;
 
     private LineReader lineReader;

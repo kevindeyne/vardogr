@@ -1,8 +1,7 @@
 package com.kevindeyne.datascrambler.service;
 
-import com.grack.nanojson.JsonObject;
-import com.grack.nanojson.JsonParser;
-import com.grack.nanojson.JsonParserException;
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.kevindeyne.datascrambler.domain.Config;
 import com.kevindeyne.datascrambler.exceptions.ConfigFileException;
 import com.kevindeyne.datascrambler.helper.SupportedDBType;
@@ -42,12 +41,12 @@ public class ConfigService {
                 configObj = readConfigObj();
             } else {
                 configObj = new JsonObject();
-                configObj.put("host", input.getString("Host", "localhost"));
-                configObj.put("port", input.getInteger("Port", 3306));
-                configObj.put("username", input.getString("Username"));
-                configObj.put("password", encryptService.encrypt(input.getPassword("Password")));
-                configObj.put("dbName", input.getString("Database name"));
-                configObj.put("dbType", input.getOption("DB type", SupportedDBType.all()));
+                configObj.addProperty("host", input.getString("Host", "localhost"));
+                configObj.addProperty("port", input.getInteger("Port", 3306));
+                configObj.addProperty("username", input.getString("Username"));
+                configObj.addProperty("password", encryptService.encrypt(input.getPassword("Password")));
+                configObj.addProperty("dbName", input.getString("Database name"));
+                configObj.addProperty("dbType", input.getOption("DB type", SupportedDBType.all()));
                 fileService.writeToFile(configObj, CONFIG_JSON);
             }
         } catch (Exception e) {
@@ -68,8 +67,8 @@ public class ConfigService {
     private JsonObject readConfigObj() throws ConfigFileException {
         String fileContents = fileService.loadFile(CONFIG_JSON);
         try {
-            return JsonParser.object().from(fileContents);
-        } catch (JsonParserException e) {
+            return new Gson().fromJson(fileContents, JsonObject.class);
+        } catch (Exception e) {
             throw new ConfigFileException("Could not read config file: " + e.getMessage(), e);
         }
     }

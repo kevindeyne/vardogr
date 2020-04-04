@@ -1,21 +1,18 @@
 package com.kevindeyne.datascrambler.commands;
 
 import com.kevindeyne.datascrambler.domain.Config;
-import com.kevindeyne.datascrambler.domain.distributionmodel.DistributionModel;
 import com.kevindeyne.datascrambler.domain.ProdConnection;
+import com.kevindeyne.datascrambler.domain.distributionmodel.DistributionModel;
 import com.kevindeyne.datascrambler.exceptions.ConfigFileException;
 import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
 import com.kevindeyne.datascrambler.helper.PrintCmds;
 import com.kevindeyne.datascrambler.service.ConfigService;
 import com.kevindeyne.datascrambler.service.DistributionModelService;
 import com.kevindeyne.datascrambler.service.FileService;
-import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 
 import javax.annotation.PostConstruct;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @ShellComponent
 public class CommandController {

@@ -1,10 +1,9 @@
 package com.kevindeyne.datascrambler.domain;
 
-import com.grack.nanojson.JsonObject;
+import com.google.gson.JsonObject;
 import com.kevindeyne.datascrambler.exceptions.ConnectionFailureException;
 import com.kevindeyne.datascrambler.helper.SupportedDBType;
 import com.kevindeyne.datascrambler.service.EncryptService;
-import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 
 import java.sql.SQLException;
@@ -20,12 +19,12 @@ public class Config {
     private SupportedDBType dbType;
 
     public Config(final JsonObject obj, final EncryptService encryptService) {
-        host = obj.getString("host");
-        username = obj.getString("username");
-        password = encryptService.decrypt(obj.getString("password"));
-        port = obj.getInt("port");
-        dbName = obj.getString("dbName");
-        dbType = SupportedDBType.valueOf(obj.getString("dbType").toUpperCase());
+        host = obj.get("host").getAsString();
+        username = obj.get("username").getAsString();
+        password = encryptService.decrypt(obj.get("password").getAsString());
+        port = obj.get("port").getAsInt();
+        dbName = obj.get("dbName").getAsString();
+        dbType = SupportedDBType.valueOf(obj.get("dbType").getAsString().toUpperCase());
     }
 
     public ProdConnection setupProdConnection() throws ConnectionFailureException {
