@@ -92,8 +92,7 @@ public class DistributionModelService {
         } else {
             targetConnectionDao.validateTable(dsl, table);
         }
-        targetConnectionDao.truncate(dsl, table.getTableName());
-
-        //TODO
+        targetConnectionDao.truncate(dsl, table.getTableName()); //TODO conditional
+        targetConnectionDao.pushData(dsl, table);
     }
 }

@@ -6,6 +6,7 @@ import com.kevindeyne.datascrambler.dao.TargetConnectionDao;
 import com.kevindeyne.datascrambler.exceptions.ConnectionFailureException;
 import com.kevindeyne.datascrambler.helper.SupportedDBType;
 import com.kevindeyne.datascrambler.service.EncryptService;
+import com.kevindeyne.datascrambler.service.GenerationService;
 import lombok.Data;
 
 import java.sql.SQLException;
@@ -72,9 +73,9 @@ public class Config {
     }
 
 
-    public TargetConnectionDao setupTargetConnection() throws ConnectionFailureException {
+    public TargetConnectionDao setupTargetConnection(GenerationService generationService) throws ConnectionFailureException {
         String url = setupUrl(dbTypeTarget.getPlaceholder(), hostTarget, portTarget, dbNameTarget);
-        TargetConnectionDao connection = new TargetConnectionDao(url, usernameTarget, passwordTarget);
+        TargetConnectionDao connection = new TargetConnectionDao(url, usernameTarget, passwordTarget, generationService);
         try {
             if (connection.testConnection()) return connection;
         } catch(SQLException e) {

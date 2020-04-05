@@ -11,6 +11,7 @@ import com.kevindeyne.datascrambler.helper.PrintCmds;
 import com.kevindeyne.datascrambler.service.ConfigService;
 import com.kevindeyne.datascrambler.service.DistributionModelService;
 import com.kevindeyne.datascrambler.service.FileService;
+import com.kevindeyne.datascrambler.service.GenerationService;
 import com.zaxxer.hikari.HikariDataSource;
 import org.jooq.DSLContext;
 import org.jooq.Named;
@@ -34,13 +35,16 @@ public class CommandController {
     private ConfigService configService;
     private DistributionModelService distributionModelService;
     private FileService fileService;
+    private GenerationService generationService;
 
     public CommandController(ConfigService configService,
                              DistributionModelService distributionModelService,
-                             FileService fileService) {
+                             FileService fileService,
+                             GenerationService generationService) {
         this.configService = configService;
         this.distributionModelService = distributionModelService;
         this.fileService = fileService;
+        this.generationService = generationService;
     }
 
     @PostConstruct
@@ -77,7 +81,7 @@ public class CommandController {
         final TargetConnectionDao targetConnectionDao;
         try {
             Config config = configService.loadTargetConfig();
-            targetConnectionDao = config.setupTargetConnection();
+            targetConnectionDao = config.setupTargetConnection(generationService);
 
             DistributionModel model = fileService.loadModel(DISTRIBUTION_MODEL_JSON);
             System.out.println(model.getTables().size());
