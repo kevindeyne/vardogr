@@ -32,11 +32,49 @@ public class ConfigService {
 
     public static final String CONFIG_JSON = "config.json";
 
-    public Config loadConfig() {
-        return loadConfig(false);
+    public Config loadTargetConfig() {
+        return loadTargetConfig(false);
     }
 
-    public Config loadConfig(boolean force) {
+    public Config loadTargetConfig(boolean force) {
+        final JsonObject configObj;
+
+        try {
+            if (!force && fileService.doesFileExist(CONFIG_JSON, MSG_CONFIG_FOUND, MSG_CONFIG_NOT_FOUND)) {
+                configObj = readConfigObj();
+
+                if(EMPTY.equals(configObj.get(HOST_TARGET).getAsString())) {
+                    configObj.addProperty(HOST_TARGET, input.getString("Hostname (Target)", "localhost"));
+                    configObj.addProperty(PORT_TARGET, input.getInteger("Port (Target)", 3306));
+                    configObj.addProperty(USERNAME_TARGET, input.getString("Username (Target)"));
+                    configObj.addProperty(PASSWORD_TARGET, encryptService.encrypt(input.getPassword("Password (Target)")));
+                    configObj.addProperty(DB_NAME_TARGET, input.getString("Database name (Target)"));
+                    configObj.addProperty(DB_TYPE_TARGET, input.getOption("DB type (Target)", SupportedDBType.all()));
+                }
+            } else {
+                throw new RuntimeException("Could not read config file");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            shellHelper.printError("Config file corrupt. Restarting file creation ...");
+            throw new RuntimeException(e);
+        }
+
+        try {
+            return new Config(configObj, encryptService);
+        } catch (Exception e) {
+            e.printStackTrace();
+            fileService.deleteFile(CONFIG_JSON);
+            throw new RuntimeException(e);
+        }
+    }
+
+
+    public Config loadSourceConfig() {
+        return loadSourceConfig(false);
+    }
+
+    public Config loadSourceConfig(boolean force) {
         final JsonObject configObj;
 
         try {
@@ -62,7 +100,7 @@ public class ConfigService {
         } catch (Exception e) {
             shellHelper.printError("Config file corrupt. Restarting file creation ...");
             fileService.deleteFile(CONFIG_JSON);
-            return loadConfig(true);
+            return loadSourceConfig(true);
         }
 
         try {
@@ -70,7 +108,7 @@ public class ConfigService {
         } catch (Exception e) {
             shellHelper.printError("Config file has corrupted content. Restarting file creation ...");
             fileService.deleteFile(CONFIG_JSON);
-            return loadConfig(true);
+            return loadSourceConfig(true);
         }
     }
 

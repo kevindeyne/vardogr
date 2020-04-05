@@ -3,6 +3,7 @@ package com.kevindeyne.datascrambler.service;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
+import com.kevindeyne.datascrambler.domain.distributionmodel.DistributionModel;
 import com.kevindeyne.datascrambler.exceptions.ConfigFileException;
 import com.kevindeyne.datascrambler.shell.ShellHelper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,5 +61,10 @@ public class FileService {
         } catch (Exception e) {
             throw new ConfigFileException("Could not read file: " + e.getMessage(), e);
         }
+    }
+
+    public DistributionModel loadModel(String file) throws ConfigFileException {
+        String rawJson = loadFile(file);
+        return GSON.fromJson(rawJson, DistributionModel.class);
     }
 }

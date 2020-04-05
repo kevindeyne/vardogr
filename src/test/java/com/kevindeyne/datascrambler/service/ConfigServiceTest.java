@@ -58,7 +58,7 @@ public class ConfigServiceTest {
         Mockito.when(encryptService.encrypt(anyString())).thenReturn(UUID.randomUUID().toString());
         Mockito.when(encryptService.decrypt(anyString())).thenReturn(SAMPLE_RAW_PASSWORD);
 
-        Config config = service.loadConfig();
+        Config config = service.loadSourceConfig();
 
         assertNotNull(config);
         assertEquals(SAMPLE_HOST, config.getHostSource());
@@ -76,7 +76,7 @@ public class ConfigServiceTest {
 
         Mockito.when(encryptService.decrypt(anyString())).thenReturn(SAMPLE_RAW_PASSWORD);
 
-        Config config = service.loadConfig();
+        Config config = service.loadSourceConfig();
 
         assertNotNull(config);
         assertEquals(SAMPLE_HOST, config.getHostSource());
@@ -102,7 +102,7 @@ public class ConfigServiceTest {
         Mockito.when(encryptService.encrypt(anyString())).thenReturn(UUID.randomUUID().toString());
         Mockito.when(encryptService.decrypt(anyString())).thenReturn(SAMPLE_RAW_PASSWORD);
 
-        Config config = service.loadConfig();
+        Config config = service.loadSourceConfig();
 
         assertNotNull(config);
         assertEquals(SAMPLE_HOST, config.getHostSource());
@@ -128,7 +128,7 @@ public class ConfigServiceTest {
         Mockito.when(encryptService.encrypt(anyString())).thenReturn(UUID.randomUUID().toString());
         Mockito.when(encryptService.decrypt(anyString())).thenReturn(SAMPLE_RAW_PASSWORD);
 
-        Config config = service.loadConfig();
+        Config config = service.loadSourceConfig();
 
         assertNotNull(config);
         assertEquals(SAMPLE_HOST, config.getHostSource());

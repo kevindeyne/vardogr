@@ -1,20 +1,30 @@
 package com.kevindeyne.datascrambler.commands;
 
+import com.kevindeyne.datascrambler.dao.TargetConnectionDao;
 import com.kevindeyne.datascrambler.domain.Config;
 import com.kevindeyne.datascrambler.dao.SourceConnectionDao;
 import com.kevindeyne.datascrambler.domain.distributionmodel.DistributionModel;
+import com.kevindeyne.datascrambler.domain.distributionmodel.TableData;
 import com.kevindeyne.datascrambler.exceptions.ConfigFileException;
 import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
 import com.kevindeyne.datascrambler.helper.PrintCmds;
 import com.kevindeyne.datascrambler.service.ConfigService;
 import com.kevindeyne.datascrambler.service.DistributionModelService;
 import com.kevindeyne.datascrambler.service.FileService;
+import com.zaxxer.hikari.HikariDataSource;
+import org.jooq.DSLContext;
+import org.jooq.Named;
+import org.jooq.impl.DefaultConfiguration;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 
 import javax.annotation.PostConstruct;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 import static com.kevindeyne.datascrambler.domain.MessageConstants.*;
+import static org.jooq.impl.DSL.using;
 
 @ShellComponent
 public class CommandController {
@@ -43,10 +53,10 @@ public class CommandController {
         final SourceConnectionDao sourceConnectionDao;
 
         try {
-            Config config = configService.loadConfig();
+            Config config = configService.loadSourceConfig();
             sourceConnectionDao = config.setupSourceConnection();
         } catch (Exception e) {
-            configService.loadConfig(true);
+            configService.loadSourceConfig(true);
             return build();
         }
 
@@ -64,7 +74,29 @@ public class CommandController {
     public String generate() {
         if(!fileService.doesFileExist(DISTRIBUTION_MODEL_JSON, MSG_DIST_FOUND, MSG_DIST_NOT_FOUND)) return MSG_DIST_REQUIRED;
 
+        final TargetConnectionDao targetConnectionDao;
+        try {
+            Config config = configService.loadTargetConfig();
+            targetConnectionDao = config.setupTargetConnection();
 
+            DistributionModel model = fileService.loadModel(DISTRIBUTION_MODEL_JSON);
+            System.out.println(model.getTables().size());
+
+            HikariDataSource dataSource = targetConnectionDao.toDataSource();
+            List<String> existingTableNames = targetConnectionDao.getAllTables(dataSource).stream().map(Named::getName).collect(Collectors.toList());
+
+            try (DSLContext dsl = using(new DefaultConfiguration().derive(dataSource))) {
+                for (TableData table : model.getTables()) {
+                    boolean tableExists = existingTableNames.contains(table.getTableName());
+                    distributionModelService.apply(dsl, targetConnectionDao, table, tableExists);
+                }
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            configService.loadTargetConfig(true);
+            return generate();
+        }
 
         return MSG_GEN_COMPLETED;
     }

@@ -2,6 +2,7 @@ package com.kevindeyne.datascrambler.domain.distributionmodel;
 
 import com.google.gson.annotations.SerializedName;
 import lombok.Data;
+import org.jooq.impl.SQLDataType;
 
 @Data
 public class FieldData {

@@ -2,6 +2,7 @@ package com.kevindeyne.datascrambler.domain;
 
 import com.google.gson.JsonObject;
 import com.kevindeyne.datascrambler.dao.SourceConnectionDao;
+import com.kevindeyne.datascrambler.dao.TargetConnectionDao;
 import com.kevindeyne.datascrambler.exceptions.ConnectionFailureException;
 import com.kevindeyne.datascrambler.helper.SupportedDBType;
 import com.kevindeyne.datascrambler.service.EncryptService;
@@ -48,6 +49,15 @@ public class Config {
         portSource = obj.get(PORT_SOURCE).getAsInt();
         dbNameSource = obj.get(DB_NAME_SOURCE).getAsString();
         dbTypeSource = SupportedDBType.valueOf(obj.get(DB_TYPE_SOURCE).getAsString().toUpperCase());
+
+        if(!EMPTY.equals(obj.get(HOST_TARGET).getAsString())) {
+            hostTarget = obj.get(HOST_TARGET).getAsString();
+            usernameTarget = obj.get(USERNAME_TARGET).getAsString();
+            passwordTarget = encryptService.decrypt(obj.get(PASSWORD_TARGET).getAsString());
+            portTarget = obj.get(PORT_TARGET).getAsInt();
+            dbNameTarget = obj.get(DB_NAME_TARGET).getAsString();
+            dbTypeTarget = SupportedDBType.valueOf(obj.get(DB_TYPE_TARGET).getAsString().toUpperCase());
+        }
     }
 
     public SourceConnectionDao setupSourceConnection() throws ConnectionFailureException {
@@ -56,9 +66,21 @@ public class Config {
         try {
             if (connection.testConnection()) return connection;
         } catch(SQLException e) {
-            throw new ConnectionFailureException("Could not connect to PROD DB");
+            throw new ConnectionFailureException("Could not connect to SOURCE DB");
         }
-        throw new ConnectionFailureException("Could not connect to PROD DB");
+        throw new ConnectionFailureException("Could not connect to SOURCE DB");
+    }
+
+
+    public TargetConnectionDao setupTargetConnection() throws ConnectionFailureException {
+        String url = setupUrl(dbTypeTarget.getPlaceholder(), hostTarget, portTarget, dbNameTarget);
+        TargetConnectionDao connection = new TargetConnectionDao(url, usernameTarget, passwordTarget);
+        try {
+            if (connection.testConnection()) return connection;
+        } catch(SQLException e) {
+            throw new ConnectionFailureException("Could not connect to TARGET DB");
+        }
+        throw new ConnectionFailureException("Could not connect to TARGET DB");
     }
 
     private String setupUrl(String urlPlaceholder, String host, Integer port, String dbName) {

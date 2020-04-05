@@ -14,5 +14,9 @@ public class Generator {
     private int precision;
     @SerializedName(value = "o")
     private String originalType;
+    @SerializedName(value = "k")
+    private String dataTypeKey;
+    @SerializedName(value = "n")
+    private boolean nullable;
 
 }
