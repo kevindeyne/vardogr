@@ -1,7 +1,9 @@
 package com.kevindeyne.datascrambler.domain.distributionmodel;
 
 import com.google.gson.annotations.SerializedName;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.jooq.Record2;
 import org.jooq.Result;
 
@@ -18,8 +20,10 @@ public class ValueDistribution {
     @SerializedName(value = "p")
     private Map<Double, MutableInt> percentages = new HashMap<>();
 
-    static class MutableInt {
-        int v = 1;
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class MutableInt {
+        private int v = 1;
         public void increment () { ++v;}
         public int get() { return v; }
     }
