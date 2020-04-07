@@ -44,7 +44,7 @@ public class TargetConnectionDaoTest {
         DSLContext dsl = DSL.using(connection, SQLDialect.MARIADB, settings);
 
         final TableData table = new TableData("exampleTable");
-        table.setTotalCount(100);
+        table.setTotalCount(12345);
         final FieldData fieldData = new FieldData("exampleField");
         fieldData.setGenerator(new Generator(5, 5, String.class.getName(), DataTypeMapping.VARCHAR.getKey(), false));
         final ValueDistribution valueDistribution = new ValueDistribution();

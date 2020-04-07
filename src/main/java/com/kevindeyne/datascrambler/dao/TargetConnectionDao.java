@@ -103,7 +103,7 @@ public class TargetConnectionDao {
         Map<String, Long> skipList = new HashMap<>();
         Map<String, Object> skipListData = new HashMap<>();
 
-        Map<Double, ValueDistribution.MutableInt> percentagesHandled = new HashMap<>();
+        Map<String, Map<Double, ValueDistribution.MutableInt>> percentagesHandled = new HashMap<>();
 
         try (ProgressBar pb = new ProgressBar("Generating data for " + table.getTableName(), total)) {
             for (long i = 0; i < total; i++) {
@@ -123,15 +123,11 @@ public class TargetConnectionDao {
                         skipListValue = skipTo;
                     }
 
-                    if(i < skipListValue) {
-                        data.add(skipListData.get(fieldName));
+                    data.add(skipListData.get(fieldName));
 
-                        if(i+1 == skipListValue) {
-                            skipList.put(fieldName, null);
-                            skipListData.put(fieldName, null);
-                        }
-                    } else {
-                        data.add(generateNewDataField(field));
+                    if(i+1 == skipListValue) {
+                        skipList.put(fieldName, null);
+                        skipListData.put(fieldName, null);
                     }
                 }
 
@@ -144,16 +140,22 @@ public class TargetConnectionDao {
     }
 
     private long calculateSkipTo(long total, long i, Double percentage) {
-        long skipTo = Math.round(i + (((double)total)/100*percentage));
-        if(skipTo > total) skipTo = total;
-        return skipTo;
+        try {
+            long skipTo = Math.round(i + (((double) total) / 100 * percentage));
+            if (skipTo > total) skipTo = total;
+            return skipTo;
+        } catch (NullPointerException e) {
+            throw e;
+        }
     }
 
-    private Double determineActivePercentage(Map<Double, ValueDistribution.MutableInt> percentagesHandled, FieldData field) {
+    private Double determineActivePercentage(Map<String, Map<Double, ValueDistribution.MutableInt>> percentagesHandledPerField, FieldData field) {
+        percentagesHandledPerField.computeIfAbsent(field.getFieldName(), k -> new HashMap<>());
+        Map<Double, ValueDistribution.MutableInt> percentagesHandled = percentagesHandledPerField.get(field.getFieldName());
         final Map<Double, ValueDistribution.MutableInt> percentages = field.getValueDistribution().getPercentages();
         Double percentage = null;
         for(Map.Entry<Double, ValueDistribution.MutableInt> percentageToPossiblyHandle : percentages.entrySet()) {
-            if(!percentagesHandled.keySet().contains(percentageToPossiblyHandle.getKey())) {
+            if(!percentagesHandled.containsKey(percentageToPossiblyHandle.getKey())) {
                 percentagesHandled.put(percentageToPossiblyHandle.getKey(), new ValueDistribution.MutableInt());
                 percentage = percentageToPossiblyHandle.getKey();
                 break;
@@ -162,6 +164,9 @@ public class TargetConnectionDao {
                 percentage = percentageToPossiblyHandle.getKey();
                 break;
             }
+        }
+        if(null == percentage) {
+            throw new RuntimeException("Could not find percentage");
         }
         return percentage;
     }
