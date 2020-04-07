@@ -3,6 +3,7 @@ package com.kevindeyne.datascrambler.dao;
 import com.kevindeyne.datascrambler.domain.distributionmodel.FieldData;
 import com.kevindeyne.datascrambler.domain.distributionmodel.Generator;
 import com.kevindeyne.datascrambler.domain.distributionmodel.TableData;
+import com.kevindeyne.datascrambler.domain.distributionmodel.ValueDistribution;
 import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.kevindeyne.datascrambler.service.GenerationService;
 import com.zaxxer.hikari.HikariDataSource;
@@ -16,13 +17,14 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
+import static java.util.Collections.synchronizedList;
+import static java.util.Collections.synchronizedMap;
 import static org.jooq.impl.DSL.using;
 
 @Data
@@ -97,27 +99,75 @@ public class TargetConnectionDao {
         List<Field<?>> fields = table.getFieldData().stream().map(f -> DSL.field(f.getFieldName())).collect(Collectors.toCollection(LinkedList::new));
 
         final long total = table.getTotalCount();
+
+        Map<String, Long> skipList = new HashMap<>();
+        Map<String, Object> skipListData = new HashMap<>();
+
+        Map<Double, ValueDistribution.MutableInt> percentagesHandled = new HashMap<>();
+
         try (ProgressBar pb = new ProgressBar("Generating data for " + table.getTableName(), total)) {
-            CountDownLatch latch = new CountDownLatch((int) total);
+            for (long i = 0; i < total; i++) {
+                List<Object> data = new LinkedList<>();
 
-            for (int i = 0; i < total; i++) {
-                threadPool.execute(() -> {
-                    List<Object> data = new LinkedList<>();
-                    table.getFieldData().forEach(f -> {
-                        final Generator g = f.getGenerator();
-                        data.add(generationService.generate(g.getOriginalType(), g.getLength(), f.getFieldName()));
-                    });
-                    dsl.insertInto(DSL.table(table.getTableName()), fields)
-                            .values(data)
-                            .execute();
-                    pb.step();
-                    latch.countDown();
-                });
+                for(FieldData field : table.getFieldData()) {
+                    final String fieldName = field.getFieldName();
+                    Long skipListValue = skipList.get(fieldName);
+
+                    if(skipListValue == null) {
+                        Double percentage = determineActivePercentage(percentagesHandled, field);
+
+                        long skipTo = calculateSkipTo(total, i, percentage);
+
+                        skipList.put(fieldName, skipTo);
+                        skipListData.put(fieldName, generateNewDataField(field));
+                        skipListValue = skipTo;
+                    }
+
+                    if(i < skipListValue) {
+                        data.add(skipListData.get(fieldName));
+
+                        if(i+1 == skipListValue) {
+                            skipList.put(fieldName, null);
+                            skipListData.put(fieldName, null);
+                        }
+                    } else {
+                        data.add(generateNewDataField(field));
+                    }
+                }
+
+                dsl.insertInto(DSL.table(table.getTableName()), fields)
+                        .values(data)
+                        .execute();
+                pb.step();
             }
-
-            latch.await();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
         }
+    }
+
+    private long calculateSkipTo(long total, long i, Double percentage) {
+        long skipTo = Math.round(i + (((double)total)/100*percentage));
+        if(skipTo > total) skipTo = total;
+        return skipTo;
+    }
+
+    private Double determineActivePercentage(Map<Double, ValueDistribution.MutableInt> percentagesHandled, FieldData field) {
+        final Map<Double, ValueDistribution.MutableInt> percentages = field.getValueDistribution().getPercentages();
+        Double percentage = null;
+        for(Map.Entry<Double, ValueDistribution.MutableInt> percentageToPossiblyHandle : percentages.entrySet()) {
+            if(!percentagesHandled.keySet().contains(percentageToPossiblyHandle.getKey())) {
+                percentagesHandled.put(percentageToPossiblyHandle.getKey(), new ValueDistribution.MutableInt());
+                percentage = percentageToPossiblyHandle.getKey();
+                break;
+            } else if(percentagesHandled.get(percentageToPossiblyHandle.getKey()).get() < percentageToPossiblyHandle.getValue().get()) {
+                percentagesHandled.put(percentageToPossiblyHandle.getKey(), percentagesHandled.get(percentageToPossiblyHandle.getKey()).increment());
+                percentage = percentageToPossiblyHandle.getKey();
+                break;
+            }
+        }
+        return percentage;
+    }
+
+    private Object generateNewDataField(FieldData field) {
+        final Generator g = field.getGenerator();
+        return generationService.generate(g.getOriginalType(), g.getLength(), field.getFieldName());
     }
 }

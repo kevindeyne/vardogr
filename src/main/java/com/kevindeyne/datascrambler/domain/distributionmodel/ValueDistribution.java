@@ -24,7 +24,7 @@ public class ValueDistribution {
     @AllArgsConstructor
     public static class MutableInt {
         private int v = 1;
-        public void increment () { ++v;}
+        public MutableInt increment () { ++v; return this; }
         public int get() { return v; }
     }
 
