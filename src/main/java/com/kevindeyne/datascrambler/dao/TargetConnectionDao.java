@@ -17,14 +17,14 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.*;
-import java.util.concurrent.CountDownLatch;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import static java.util.Collections.synchronizedList;
-import static java.util.Collections.synchronizedMap;
 import static org.jooq.impl.DSL.using;
 
 @Data
@@ -109,11 +109,11 @@ public class TargetConnectionDao {
             for (long i = 0; i < total; i++) {
                 List<Object> data = new LinkedList<>();
 
-                for(FieldData field : table.getFieldData()) {
+                for (FieldData field : table.getFieldData()) {
                     final String fieldName = field.getFieldName();
                     Long skipListValue = skipList.get(fieldName);
 
-                    if(skipListValue == null) {
+                    if (skipListValue == null) {
                         Double percentage = determineActivePercentage(percentagesHandled, field);
 
                         long skipTo = calculateSkipTo(total, i, percentage);
@@ -125,7 +125,7 @@ public class TargetConnectionDao {
 
                     data.add(skipListData.get(fieldName));
 
-                    if(i+1 == skipListValue) {
+                    if (i + 1 == skipListValue) {
                         skipList.put(fieldName, null);
                         skipListData.put(fieldName, null);
                     }
@@ -140,13 +140,9 @@ public class TargetConnectionDao {
     }
 
     private long calculateSkipTo(long total, long i, Double percentage) {
-        try {
-            long skipTo = Math.round(i + (((double) total) / 100 * percentage));
-            if (skipTo > total) skipTo = total;
-            return skipTo;
-        } catch (NullPointerException e) {
-            throw e;
-        }
+        long skipTo = Math.round(i + (((double) total) / 100 * percentage));
+        if (skipTo > total) skipTo = total;
+        return skipTo;
     }
 
     private Double determineActivePercentage(Map<String, Map<Double, ValueDistribution.MutableInt>> percentagesHandledPerField, FieldData field) {
@@ -154,18 +150,18 @@ public class TargetConnectionDao {
         Map<Double, ValueDistribution.MutableInt> percentagesHandled = percentagesHandledPerField.get(field.getFieldName());
         final Map<Double, ValueDistribution.MutableInt> percentages = field.getValueDistribution().getPercentages();
         Double percentage = null;
-        for(Map.Entry<Double, ValueDistribution.MutableInt> percentageToPossiblyHandle : percentages.entrySet()) {
-            if(!percentagesHandled.containsKey(percentageToPossiblyHandle.getKey())) {
+        for (Map.Entry<Double, ValueDistribution.MutableInt> percentageToPossiblyHandle : percentages.entrySet()) {
+            if (!percentagesHandled.containsKey(percentageToPossiblyHandle.getKey())) {
                 percentagesHandled.put(percentageToPossiblyHandle.getKey(), new ValueDistribution.MutableInt());
                 percentage = percentageToPossiblyHandle.getKey();
                 break;
-            } else if(percentagesHandled.get(percentageToPossiblyHandle.getKey()).get() < percentageToPossiblyHandle.getValue().get()) {
+            } else if (percentagesHandled.get(percentageToPossiblyHandle.getKey()).get() < percentageToPossiblyHandle.getValue().get()) {
                 percentagesHandled.put(percentageToPossiblyHandle.getKey(), percentagesHandled.get(percentageToPossiblyHandle.getKey()).increment());
                 percentage = percentageToPossiblyHandle.getKey();
                 break;
             }
         }
-        if(null == percentage) {
+        if (null == percentage) {
             throw new RuntimeException("Could not find percentage");
         }
         return percentage;

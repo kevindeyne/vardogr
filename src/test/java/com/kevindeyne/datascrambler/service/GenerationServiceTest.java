@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.io.FileNotFoundException;
 import java.util.Random;
 
 public class GenerationServiceTest {
@@ -24,7 +25,11 @@ public class GenerationServiceTest {
         System.out.println(stringData);
     }
 
-
+    @Test
+    public void test() throws FileNotFoundException {
+        String string = generationService.randomName();
+        System.out.println(string);
+    }
     //java.lang.Integer
     //java.sql.Date
 
