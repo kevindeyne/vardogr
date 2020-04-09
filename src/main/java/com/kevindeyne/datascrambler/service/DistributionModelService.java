@@ -11,13 +11,11 @@ import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
 import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.zaxxer.hikari.HikariDataSource;
 import me.tongfei.progressbar.ProgressBar;
-import org.jooq.DSLContext;
-import org.jooq.DataType;
-import org.jooq.Field;
-import org.jooq.Table;
+import org.jooq.*;
 import org.jooq.impl.DefaultConfiguration;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -44,11 +42,22 @@ public class DistributionModelService {
                     try (DSLContext dsl = using(new DefaultConfiguration().derive(dataSource))) {
                         TableData tableData = new TableData(table.getName());
                         tableData.setTotalCount(sourceConnectionDao.count(tableData.getTableName(), dsl));
+
+                        List<String> primaryKeys = new ArrayList<>();
+                        for(UniqueKey<?> key : table.getKeys()) {
+                            if(key.isPrimary()) {
+                                for (TableField field : key.getFields()) {
+                                    primaryKeys.add(field.getName());
+                                }
+                            }
+                        }
+
                         Arrays.stream(table.fields()).forEach(f -> {
                             FieldData fieldData = new FieldData(f.getName());
                             fieldData.setGenerator(determineGenerator(f));
                             fieldData.setValueDistribution(sourceConnectionDao.determineDistribution(table, f, tableData.getTotalCount(), dsl));
 
+                            if(primaryKeys.contains(f.getName())) fieldData.setPrimaryKey(true);
                             //TODO determine if field is FK with other table
 
                             tableData.getFieldData().add(fieldData);

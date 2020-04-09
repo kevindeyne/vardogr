@@ -18,6 +18,9 @@ public class TableData {
     @SerializedName(value = "f")
     private List<FieldData> fieldData = new ArrayList<>();
 
+    @SerializedName(value = "o")
+    private Integer orderOfExecution; //lower is earlier
+
     public TableData(String name) {
         this.tableName = name;
     }

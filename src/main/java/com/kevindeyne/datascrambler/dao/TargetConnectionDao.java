@@ -17,15 +17,12 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
-import static org.jooq.impl.DSL.using;
+import static org.jooq.impl.DSL.*;
 
 @Data
 public class TargetConnectionDao {
@@ -68,6 +65,7 @@ public class TargetConnectionDao {
     }
 
     public void createTable(DSLContext dsl, TableData table) {
+        List<Field<?>> primaryKeys = new ArrayList<>();
         CreateTableColumnStep createStep = null;
         try {
             createStep = dsl.createTable(DSL.table(table.getTableName()));
@@ -81,11 +79,16 @@ public class TargetConnectionDao {
 
                 final Field<?> field = DSL.field(fieldData.getFieldName(), dataType);
                 createStep = createStep.column(field);
-            }
 
+                if (fieldData.isPrimaryKey()) primaryKeys.add(field(fieldData.getFieldName()));
+            }
             createStep.execute();
         } finally {
             if (createStep != null) createStep.close();
+        }
+
+        if (!primaryKeys.isEmpty()) {
+            dsl.alterTable(table(table.getTableName())).add(constraint().primaryKey(primaryKeys.toArray(new Field<?>[0]))).execute();
         }
     }
 

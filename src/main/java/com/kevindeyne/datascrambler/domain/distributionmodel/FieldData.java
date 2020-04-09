@@ -13,6 +13,8 @@ public class FieldData {
     private Generator generator;
     @SerializedName(value = "v")
     private ValueDistribution valueDistribution;
+    @SerializedName(value = "p")
+    private boolean primaryKey;
 
     public FieldData(String name) {
         this.fieldName = name;
