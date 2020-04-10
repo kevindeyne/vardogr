@@ -68,7 +68,7 @@ public class TargetConnectionDao {
         List<Field<?>> primaryKeys = new ArrayList<>();
         CreateTableColumnStep createStep = null;
         try {
-            createStep = dsl.createTable(DSL.table(table.getTableName()));
+            createStep = dsl.createTable(table(quotedName(table.getTableName())));
 
             for (FieldData fieldData : table.getFieldData()) {
                 final Generator generator = fieldData.getGenerator();
@@ -77,10 +77,10 @@ public class TargetConnectionDao {
                 dataType = dataType.precision(generator.getPrecision());
                 dataType = dataType.length(generator.getLength());
 
-                final Field<?> field = DSL.field(fieldData.getFieldName(), dataType);
+                final Field<?> field = field(quotedName(fieldData.getFieldName()), dataType);
                 createStep = createStep.column(field);
 
-                if (fieldData.isPrimaryKey()) primaryKeys.add(field(fieldData.getFieldName()));
+                if (fieldData.isPrimaryKey()) primaryKeys.add(field(quotedName(fieldData.getFieldName())));
             }
             createStep.execute();
         } finally {
@@ -88,7 +88,7 @@ public class TargetConnectionDao {
         }
 
         if (!primaryKeys.isEmpty()) {
-            dsl.alterTable(table(table.getTableName())).add(constraint().primaryKey(primaryKeys.toArray(new Field<?>[0]))).execute();
+            dsl.alterTable(table(quotedName(table.getTableName()))).add(constraint().primaryKey(primaryKeys.toArray(new Field<?>[0]))).execute();
         }
     }
 

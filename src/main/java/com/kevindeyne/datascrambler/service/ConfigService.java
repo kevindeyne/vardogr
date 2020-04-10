@@ -87,6 +87,7 @@ public class ConfigService {
                 configObj.addProperty(USERNAME_SOURCE, input.getString("Username (Source)"));
                 configObj.addProperty(PASSWORD_SOURCE, encryptService.encrypt(input.getPassword("Password (Source)")));
                 configObj.addProperty(DB_NAME_SOURCE, input.getString("Database name (Source)"));
+                configObj.addProperty(SCHEMA_SOURCE, input.getString("Schema name (Source)"));
                 configObj.addProperty(DB_TYPE_SOURCE, input.getOption("DB type (Source)", SupportedDBType.all()));
 
                 configObj.addProperty(HOST_TARGET, EMPTY);

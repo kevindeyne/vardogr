@@ -12,9 +12,10 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.using;
+import static org.jooq.impl.DSL.*;
 
 @Data
 public class SourceConnectionDao {
@@ -32,27 +33,34 @@ public class SourceConnectionDao {
     public boolean testConnection() throws SQLException {
         Connection connection = DriverManager.getConnection(url, username, password);
         DSLContext dsl = using(new DefaultConfiguration().derive(connection));
-        Integer[] result = dsl.selectOne().fetch().intoArray(0, Integer.class);
+        Short[] result = dsl.selectOne().fetch().intoArray(0, Short.class);
         return result.length == 1 && result[0] == 1;
     }
 
-    public List<Table<?>> getAllTables(DataSource dataSource) {
+    public List<Table<?>> getAllTables(DataSource dataSource, String schemaName) {
         try (DSLContext dsl = using(new DefaultConfiguration().derive(dataSource))) {
-            return dsl.meta().getTables();
+            final Optional<Schema> optionalSchema = dsl.meta().getSchemas().stream()
+                    .filter(s -> s.getName().equals(schemaName))
+                    .findFirst();
+            if(!optionalSchema.isPresent()) throw new RuntimeException("Schema '" + schemaName + "' is invalid.");
+            final List<Table<?>> tables = dsl.meta(optionalSchema.get()).getTables();
+            return tables.stream()
+                    .filter(t -> TableOptions.TableType.TABLE.equals(t.getOptions().type()) && t.fields().length > 0)
+                    .collect(Collectors.toList());
         }
     }
 
     public Long count(String tableName, DSLContext dsl) {
         return dsl
-                        .selectCount()
-                        .from(DSL.table(tableName))
-                        .fetchOne(0, long.class);
+                .selectCount()
+                .from(table(quotedName(tableName)))
+                .fetchOne(0, long.class);
     }
 
     public ValueDistribution determineDistribution(Table<?> table, Field<?> field, long totalCount, DSLContext dsl) {
-        Field<Object> f = field(field.getName());
+        Field<Object> f = field(quotedName(field.getName()));
         Result<? extends Record2<?, Integer>> rawDistribution = dsl.select(f, DSL.count())
-                .from(DSL.table(table.getName()))
+                .from(table(quotedName(table.getName())))
                 .groupBy(f)
                 .fetch();
         return new ValueDistribution()

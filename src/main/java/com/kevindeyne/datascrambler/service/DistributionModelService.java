@@ -12,7 +12,11 @@ import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.zaxxer.hikari.HikariDataSource;
 import me.tongfei.progressbar.ProgressBar;
 import org.jooq.*;
+import org.jooq.conf.RenderNameStyle;
+import org.jooq.conf.RenderQuotedNames;
+import org.jooq.conf.Settings;
 import org.jooq.impl.DefaultConfiguration;
+import org.jooq.util.postgres.PostgresDataType;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -29,12 +33,12 @@ public class DistributionModelService {
 
     private ExecutorService threadPool = Executors.newFixedThreadPool(10);
 
-    public DistributionModel create(SourceConnectionDao sourceConnectionDao) throws ModelCreationException {
+    public DistributionModel create(SourceConnectionDao sourceConnectionDao, String schema) throws ModelCreationException {
         HikariDataSource dataSource = sourceConnectionDao.toDataSource();
         try {
             DistributionModel model = new DistributionModel();
 
-            List<Table<?>> allTables = sourceConnectionDao.getAllTables(dataSource);
+            List<Table<?>> allTables = sourceConnectionDao.getAllTables(dataSource, schema);
             CountDownLatch latch = new CountDownLatch(allTables.size());
 
             try (ProgressBar pb = new ProgressBar("Building model", calculateTotalFieldsForModel(allTables))) {
@@ -85,14 +89,16 @@ public class DistributionModelService {
 
     private Generator determineGenerator(Field<?> f) {
         DataType<?> dataType = f.getDataType();
-
         int length = dataType.length();
         int precision = dataType.precision();
         String type = dataType.getType().getTypeName();
         boolean nullable = dataType.nullable();
-        String key = DataTypeMapping.findByKey(dataType.getTypeName()).getKey();
-
-        return new Generator(length, precision, type, key, nullable);
+        try {
+            String key = DataTypeMapping.findByKey(dataType.getTypeName()).getKey();
+            return new Generator(length, precision, type, key, nullable);
+        } catch (IllegalArgumentException e) {
+            throw new IllegalArgumentException(e.getMessage() + " for " + f.getName());
+        }
     }
 
     public void apply(DSLContext dsl, TargetConnectionDao targetConnectionDao, TableData table, boolean tableExists) {

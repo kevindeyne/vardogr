@@ -10,9 +10,38 @@ public enum DataTypeMapping {
     INTEGER("integer", SQLDataType.INTEGER),
     NUMERIC("numeric", SQLDataType.NUMERIC),
     DECIMAL("decimal", SQLDataType.DECIMAL),
-    DATE( "date", SQLDataType.DATE),
+    DATE("date", SQLDataType.DATE),
     TIMESTAMP("timestamp", SQLDataType.TIMESTAMP),
-    TIME("time", SQLDataType.TIME);
+    TIME("time", SQLDataType.TIME),
+    LONGVARCHAR("longvarchar", SQLDataType.LONGVARCHAR),
+    CLOB("clob", SQLDataType.CLOB),
+    NVARCHAR("nvarchar", SQLDataType.NVARCHAR),
+    NCHAR("nchar", SQLDataType.NCHAR),
+    LONGNVARCHAR("longnvarchar", SQLDataType.LONGNVARCHAR),
+    NCLOB("nclob", SQLDataType.NCLOB),
+    BOOLEAN("boolean", SQLDataType.BOOLEAN),
+    BIT("bit", SQLDataType.BIT),
+    TINYINT("tinyint", SQLDataType.TINYINT),
+    SMALLINT("smallint", SQLDataType.SMALLINT),
+    BIGINT("bigint", SQLDataType.BIGINT),
+    DECIMAL_INTEGER("decimal_integer", SQLDataType.DECIMAL_INTEGER),
+    TINYINTUNSIGNED("tinyint unsigned", SQLDataType.TINYINTUNSIGNED),
+    SMALLINTUNSIGNED("smallint unsigned", SQLDataType.SMALLINTUNSIGNED),
+    INTEGERUNSIGNED("integer unsigned", SQLDataType.INTEGERUNSIGNED),
+    BIGINTUNSIGNED("bigint unsigned", SQLDataType.BIGINTUNSIGNED),
+    DOUBLE("double", SQLDataType.DOUBLE),
+    FLOAT("float", SQLDataType.FLOAT),
+    REAL("real", SQLDataType.REAL),
+    INTERVAL("interval", SQLDataType.INTERVAL),
+    INTERVALYEARTOMONTH("interval year to month", SQLDataType.INTERVALYEARTOMONTH),
+    INTERVALDAYTOSECOND("interval day to second", SQLDataType.INTERVALDAYTOSECOND),
+    LOCALDATE("date", SQLDataType.LOCALDATE),
+    LOCALTIME("time", SQLDataType.LOCALTIME),
+    LOCALDATETIME("timestamp", SQLDataType.LOCALDATETIME),
+    OFFSETTIME("time with time zone", SQLDataType.OFFSETTIME),
+    OFFSETDATETIME("timestamp with time zone", SQLDataType.OFFSETDATETIME),
+
+    OTHER("other", SQLDataType.INTEGER);
 
     private String key;
     private DataType<?> dataType;
@@ -23,8 +52,8 @@ public enum DataTypeMapping {
     }
 
     public static DataTypeMapping findByKey(String key) {
-        for(DataTypeMapping mapping : values()) {
-            if(key.equals(mapping.key)) return mapping;
+        for (DataTypeMapping mapping : values()) {
+            if (key.equals(mapping.key)) return mapping;
         }
         throw new IllegalArgumentException("Unsupported dataType provided: " + key);
     }
@@ -38,12 +67,12 @@ public enum DataTypeMapping {
     }
 
     /*
-    public static final DataType<String> LONGVARCHAR = new DefaultDataType((SQLDialect)null, String.class, "longvarchar");
-    public static final DataType<String> CLOB = new DefaultDataType((SQLDialect)null, String.class, "clob");
-    public static final DataType<String> NVARCHAR = new DefaultDataType((SQLDialect)null, String.class, "nvarchar");
-    public static final DataType<String> NCHAR = new DefaultDataType((SQLDialect)null, String.class, "nchar");
-    public static final DataType<String> LONGNVARCHAR = new DefaultDataType((SQLDialect)null, String.class, "longnvarchar");
-    public static final DataType<String> NCLOB = new DefaultDataType((SQLDialect)null, String.class, "nclob");
+    public static final DataType<String> LONGVARCHAR("longvarchar");
+    public static final DataType<String> CLOB("clob");
+    public static final DataType<String> NVARCHAR("nvarchar");
+    public static final DataType<String> NCHAR("nchar");
+    public static final DataType<String> LONGNVARCHAR("longnvarchar");
+    public static final DataType<String> NCLOB("nclob");
     public static final DataType<Boolean> BOOLEAN = new DefaultDataType((SQLDialect)null, Boolean.class, "boolean");
     public static final DataType<Boolean> BIT = new DefaultDataType((SQLDialect)null, Boolean.class, "bit");
     public static final DataType<Byte> TINYINT = new DefaultDataType((SQLDialect)null, Byte.class, "tinyint");

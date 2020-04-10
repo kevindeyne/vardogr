@@ -19,6 +19,7 @@ public class Config {
     private Integer portSource;
     private String hostSource;
     private String dbNameSource;
+    private String schemaSource;
     private SupportedDBType dbTypeSource;
 
     private String usernameTarget;
@@ -33,6 +34,7 @@ public class Config {
     public static final String USERNAME_SOURCE = "username-source";
     public static final String PASSWORD_SOURCE = "password-source";
     public static final String DB_NAME_SOURCE = "dbName-source";
+    public static final String SCHEMA_SOURCE = "schema-source";
     public static final String DB_TYPE_SOURCE = "dbType-source";
     public static final String HOST_TARGET = "host-target";
 
@@ -49,6 +51,7 @@ public class Config {
         passwordSource = encryptService.decrypt(obj.get(PASSWORD_SOURCE).getAsString());
         portSource = obj.get(PORT_SOURCE).getAsInt();
         dbNameSource = obj.get(DB_NAME_SOURCE).getAsString();
+        schemaSource = obj.get(SCHEMA_SOURCE).getAsString();
         dbTypeSource = SupportedDBType.valueOf(obj.get(DB_TYPE_SOURCE).getAsString().toUpperCase());
 
         if(!EMPTY.equals(obj.get(HOST_TARGET).getAsString())) {

@@ -55,17 +55,18 @@ public class CommandController {
     @ShellMethod("Builds the model")
     public String build() {
         final SourceConnectionDao sourceConnectionDao;
-
+        String schemaSource;
         try {
             Config config = configService.loadSourceConfig();
             sourceConnectionDao = config.setupSourceConnection();
+            schemaSource = config.getSchemaSource();
         } catch (Exception e) {
             configService.loadSourceConfig(true);
             return build();
         }
 
         try {
-            DistributionModel model = distributionModelService.create(sourceConnectionDao);
+            DistributionModel model = distributionModelService.create(sourceConnectionDao, schemaSource);
             fileService.writeToFile(model.toJsonFile(), DISTRIBUTION_MODEL_JSON);
             return MSG_BUILD_COMPLETED;
         } catch (ModelCreationException | ConfigFileException e) {
