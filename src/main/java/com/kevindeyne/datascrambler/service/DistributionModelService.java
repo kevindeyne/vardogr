@@ -86,6 +86,8 @@ public class DistributionModelService {
             return model;
         } catch (Exception e) {
             throw new ModelCreationException("Failure while setting up distribution model", e);
+        } finally {
+            dataSource.close();
         }
     }
 
