@@ -85,7 +85,6 @@ public class CommandController {
             targetConnectionDao = config.setupTargetConnection(generationService);
 
             DistributionModel model = fileService.loadModel(DISTRIBUTION_MODEL_JSON);
-            System.out.println(model.getTables().size());
 
             HikariDataSource dataSource = targetConnectionDao.toDataSource();
             List<String> existingTableNames = targetConnectionDao.getAllTables(dataSource).stream().map(Named::getName).collect(Collectors.toList());
@@ -99,8 +98,9 @@ public class CommandController {
 
         } catch (Exception e) {
             e.printStackTrace();
-            configService.loadTargetConfig(true);
-            return generate();
+            //configService.loadTargetConfig(true);
+            //return generate();
+            throw new RuntimeException(e);
         }
 
         return MSG_GEN_COMPLETED;

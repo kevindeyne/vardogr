@@ -81,6 +81,7 @@ public class Config {
         try {
             if (connection.testConnection()) return connection;
         } catch(SQLException e) {
+            e.printStackTrace();
             throw new ConnectionFailureException("Could not connect to TARGET DB");
         }
         throw new ConnectionFailureException("Could not connect to TARGET DB");

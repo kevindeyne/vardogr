@@ -50,6 +50,7 @@ public class ConfigService {
                     configObj.addProperty(PASSWORD_TARGET, encryptService.encrypt(input.getPassword("Password (Target)")));
                     configObj.addProperty(DB_NAME_TARGET, input.getString("Database name (Target)"));
                     configObj.addProperty(DB_TYPE_TARGET, input.getOption("DB type (Target)", SupportedDBType.all()));
+                    fileService.writeToFile(configObj, CONFIG_JSON);
                 }
             } else {
                 throw new RuntimeException("Could not read config file");

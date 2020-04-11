@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.sql.Date;
+import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -51,6 +52,8 @@ public class GenerationService {
             return generateString(maxLength, fieldName);
         } else if (Integer.class.getName().equals(classIdentifier)) {
             return generateInteger(maxLength);
+        } else if (Short.class.getName().equals(classIdentifier)) {
+            return Math.abs(RANDOM.nextInt(Short.MAX_VALUE));
         } else if(BigDecimal.class.getName().equals(classIdentifier)) {
             return BigDecimal.valueOf(RANDOM.nextDouble());
         } else if(Date.class.getName().equals(classIdentifier)) {
@@ -59,6 +62,8 @@ public class GenerationService {
             int maxDay = (int) LocalDate.of(year-16, 1, 1).toEpochDay();
             long randomDay = minDay + RANDOM.nextInt(maxDay - minDay);
             return LocalDate.ofEpochDay(randomDay);
+        } else if(Timestamp.class.getName().equals(classIdentifier)) {
+            return new Timestamp(new java.util.Date().getTime() - RANDOM.nextInt());
         }
         throw new RuntimeException("Unknown class identifier:" + classIdentifier);
     }
@@ -69,6 +74,7 @@ public class GenerationService {
     }
 
     public String generateString(int maxLength, String fieldName) {
+        if(maxLength > 1000) maxLength = 1000;
         final String fieldNameLower = fieldName.toLowerCase();
         if(fieldNameLower.endsWith("name")) {
             return generateName(maxLength);

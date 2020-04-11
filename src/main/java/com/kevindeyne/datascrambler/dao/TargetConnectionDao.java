@@ -12,6 +12,7 @@ import me.tongfei.progressbar.ProgressBar;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
+import org.jooq.impl.SQLDataType;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
@@ -74,8 +75,8 @@ public class TargetConnectionDao {
                 final Generator generator = fieldData.getGenerator();
                 DataType<?> dataType = DataTypeMapping.findByKey(generator.getDataTypeKey()).getDataType();
                 dataType = dataType.nullable(generator.isNullable());
-                dataType = dataType.precision(generator.getPrecision());
-                dataType = dataType.length(generator.getLength());
+                dataType = dataType.precision((generator.getPrecision() > Short.MAX_VALUE) ? Short.MAX_VALUE : generator.getPrecision());
+                dataType = dataType.length((generator.getLength() > Short.MAX_VALUE) ? Short.MAX_VALUE : generator.getLength());
 
                 final Field<?> field = field(quotedName(fieldData.getFieldName()), dataType);
                 createStep = createStep.column(field);
@@ -99,7 +100,7 @@ public class TargetConnectionDao {
     private ExecutorService threadPool = Executors.newFixedThreadPool(50);
 
     public void pushData(DSLContext dsl, TableData table) {
-        List<Field<?>> fields = table.getFieldData().stream().map(f -> DSL.field(f.getFieldName())).collect(Collectors.toCollection(LinkedList::new));
+        List<Field<?>> fields = table.getFieldData().stream().map(f -> field(quotedName(f.getFieldName()))).collect(Collectors.toCollection(LinkedList::new));
 
         final long total = table.getTotalCount();
 
@@ -134,7 +135,7 @@ public class TargetConnectionDao {
                     }
                 }
 
-                dsl.insertInto(DSL.table(table.getTableName()), fields)
+                dsl.insertInto(table(quotedName(table.getTableName())), fields)
                         .values(data)
                         .execute();
                 pb.step();
