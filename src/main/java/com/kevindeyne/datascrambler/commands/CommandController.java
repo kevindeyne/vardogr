@@ -78,7 +78,7 @@ public class CommandController {
     @ShellMethod("Generates data based on the model")
     public String generate() {
         if(!fileService.doesFileExist(DISTRIBUTION_MODEL_JSON, MSG_DIST_FOUND, MSG_DIST_NOT_FOUND)) return MSG_DIST_REQUIRED;
-
+        HikariDataSource dataSource = null;
         final TargetConnectionDao targetConnectionDao;
         try {
             Config config = configService.loadTargetConfig();
@@ -86,7 +86,7 @@ public class CommandController {
 
             DistributionModel model = fileService.loadModel(DISTRIBUTION_MODEL_JSON);
 
-            HikariDataSource dataSource = targetConnectionDao.toDataSource();
+            dataSource = targetConnectionDao.toDataSource();
             List<String> existingTableNames = targetConnectionDao.getAllTables(dataSource).stream().map(Named::getName).collect(Collectors.toList());
 
             try (DSLContext dsl = using(new DefaultConfiguration().derive(dataSource))) {
@@ -101,6 +101,8 @@ public class CommandController {
             //configService.loadTargetConfig(true);
             //return generate();
             throw new RuntimeException(e);
+        } finally {
+            if(dataSource != null) dataSource.close();
         }
 
         return MSG_GEN_COMPLETED;

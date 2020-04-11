@@ -31,7 +31,7 @@ import static org.jooq.impl.DSL.using;
 @Service
 public class DistributionModelService {
 
-    private ExecutorService threadPool = Executors.newFixedThreadPool(10);
+    private ExecutorService threadPool;
 
     public DistributionModel create(SourceConnectionDao sourceConnectionDao, String schema) throws ModelCreationException {
         HikariDataSource dataSource = sourceConnectionDao.toDataSource();
@@ -46,6 +46,7 @@ public class DistributionModelService {
             configuration.setSettings(configuration.settings().withParseDialect(sourceConnectionDao.getSqlDialect()));
 
             try (ProgressBar pb = new ProgressBar("Building model", calculateTotalFieldsForModel(allTables))) {
+                threadPool = Executors.newFixedThreadPool(10);
                 allTables.forEach(table -> threadPool.execute(() -> {
                     try (DSLContext dsl = using(configuration.derive(dataSource))) {
                         TableData tableData = new TableData(table.getName());
@@ -87,6 +88,7 @@ public class DistributionModelService {
         } catch (Exception e) {
             throw new ModelCreationException("Failure while setting up distribution model", e);
         } finally {
+            threadPool.shutdown();
             dataSource.close();
         }
     }
