@@ -53,7 +53,7 @@ public enum DataTypeMapping {
     BOOL("bool", SQLDataType.BOOLEAN),
     CHARACTERVARYING ("character varying", SQLDataType.VARCHAR),
     CHARACTER("character", SQLDataType.CHAR),
-    TEXT("text", SQLDataType.CLOB),
+    TEXT("text", SQLDataType.VARCHAR),//*
     TIMEWITHOUTTIMEZONE("time without time zone", SQLDataType.TIME),
     TIMEWITHTIMEZONE( "time with time zone", SQLDataType.TIMEWITHTIMEZONE),
     TIMETZ("timetz", SQLDataType.TIMEWITHTIMEZONE),
@@ -61,7 +61,7 @@ public enum DataTypeMapping {
     TIMESTAMPWITHTIMEZONE("timestamp with time zone", SQLDataType.TIMESTAMPWITHTIMEZONE),
     TIMESTAMPTZ("timestamptz", SQLDataType.TIMESTAMPWITHTIMEZONE),
     INSTANT("timestamp with time zone", SQLDataType.INSTANT),
-    BYTEA ("bytea", SQLDataType.BLOB),
+    BYTEA ("bytea", SQLDataType.VARCHAR),//*
     SERIAL ("serial", SQLDataType.INTEGER),
     SERIAL4 ("serial4", SQLDataType.INTEGER),
     BIGSERIAL("bigserial", SQLDataType.BIGINT),

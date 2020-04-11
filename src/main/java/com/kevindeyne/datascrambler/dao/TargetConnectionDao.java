@@ -117,13 +117,15 @@ public class TargetConnectionDao {
                     final String fieldName = field.getFieldName();
                     Long skipListValue = skipList.get(fieldName);
 
-                    if (skipListValue == null) {
+                    if (skipListValue == null || field.isPrimaryKey()) {
                         Double percentage = determineActivePercentage(percentagesHandled, field);
 
                         long skipTo = calculateSkipTo(total, i, percentage);
 
                         skipList.put(fieldName, skipTo);
-                        skipListData.put(fieldName, generateNewDataField(field));
+                        Object gen;
+                        do { gen = generateNewDataField(field); } while(skipListData.containsValue(gen));
+                        skipListData.put(fieldName, gen);
                         skipListValue = skipTo;
                     }
 
@@ -166,7 +168,8 @@ public class TargetConnectionDao {
             }
         }
         if (null == percentage) {
-            throw new RuntimeException("Could not find percentage");
+            return 0.0001D;
+            //throw new RuntimeException("Could not find percentage");
         }
         return percentage;
     }

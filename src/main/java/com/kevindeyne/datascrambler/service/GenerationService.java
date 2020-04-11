@@ -1,7 +1,6 @@
 package com.kevindeyne.datascrambler.service;
 
 import com.devskiller.jfairy.Fairy;
-import com.devskiller.jfairy.producer.person.PersonProperties;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -64,6 +63,8 @@ public class GenerationService {
             return LocalDate.ofEpochDay(randomDay);
         } else if(Timestamp.class.getName().equals(classIdentifier)) {
             return new Timestamp(new java.util.Date().getTime() - RANDOM.nextInt());
+        } else if(Boolean.class.getName().equals(classIdentifier)) {
+            return RANDOM.nextInt(1) == 0;
         }
         throw new RuntimeException("Unknown class identifier:" + classIdentifier);
     }

@@ -99,8 +99,8 @@ public class SourceConnectionDao {
                     matchingJavaClass = ColumnTypeMapping.findByKey(metaData.getColumnType(1)).getType();
                     key = DataTypeMapping.findByKey(ColumnTypeMapping.findByKey(metaData.getColumnType(1)).name().toLowerCase()).getKey();
                 } catch (IllegalArgumentException i) {
-                    matchingJavaClass = SQLDataType.CLOB.getType();
-                    key = DataTypeMapping.CLOB.getKey();
+                    matchingJavaClass = SQLDataType.VARCHAR.getType();
+                    key = DataTypeMapping.VARCHAR.getKey();
                 }
             }
             final boolean nullable = ResultSetMetaData.columnNullable == metaData.isNullable(1);
