@@ -1,6 +1,7 @@
 package com.kevindeyne.datascrambler.mapping;
 
 import org.jooq.DataType;
+import org.jooq.SQLDialect;
 import org.jooq.impl.SQLDataType;
 
 public enum DataTypeMapping {
@@ -41,7 +42,45 @@ public enum DataTypeMapping {
     OFFSETTIME("time with time zone", SQLDataType.OFFSETTIME),
     OFFSETDATETIME("timestamp with time zone", SQLDataType.OFFSETDATETIME),
 
-    OTHER("other", SQLDataType.INTEGER);
+    //POSTGRESS
+    INT2("int2", SQLDataType.SMALLINT),
+    INT( "int", SQLDataType.INTEGER),
+    INT4 ("int4", SQLDataType.INTEGER),
+    INT8("int8", SQLDataType.BIGINT),
+    DOUBLEPRECISION ("double precision", SQLDataType.DOUBLE),
+    FLOAT8("float8", SQLDataType.FLOAT),
+    FLOAT4("float4", SQLDataType.REAL),
+    BOOL("bool", SQLDataType.BOOLEAN),
+    CHARACTERVARYING ("character varying", SQLDataType.VARCHAR),
+    CHARACTER("character", SQLDataType.CHAR),
+    TEXT("text", SQLDataType.CLOB),
+    TIMEWITHOUTTIMEZONE("time without time zone", SQLDataType.TIME),
+    TIMEWITHTIMEZONE( "time with time zone", SQLDataType.TIMEWITHTIMEZONE),
+    TIMETZ("timetz", SQLDataType.TIMEWITHTIMEZONE),
+    TIMESTAMPWITHOUTTIMEZONE ("timestamp without time zone", SQLDataType.TIMESTAMP),
+    TIMESTAMPWITHTIMEZONE("timestamp with time zone", SQLDataType.TIMESTAMPWITHTIMEZONE),
+    TIMESTAMPTZ("timestamptz", SQLDataType.TIMESTAMPWITHTIMEZONE),
+    INSTANT("timestamp with time zone", SQLDataType.INSTANT),
+    BYTEA ("bytea", SQLDataType.BLOB),
+    SERIAL ("serial", SQLDataType.INTEGER),
+    SERIAL4 ("serial4", SQLDataType.INTEGER),
+    BIGSERIAL("bigserial", SQLDataType.BIGINT),
+    SERIAL8 ("serial8", SQLDataType.BIGINT ),
+    BITVARYING ("bit varying", SQLDataType.VARCHAR),
+    VARBIT ("varbit", SQLDataType.VARCHAR),
+    BPCHAR ("bpchar", SQLDataType.CHAR ),
+    REFCURSOR ("refcursor", SQLDataType.RESULT),
+    UUID ("uuid", SQLDataType.UUID),
+    JSON("json", SQLDataType.JSON),
+    JSONB ("jsonb", SQLDataType.JSONB),
+    OID( "oid", SQLDataType.BIGINT),
+    OIDVECTOR( "oidvector", SQLDataType.BIGINT),
+    XID ("xid", SQLDataType.BIGINT),
+    TID ("tid", SQLDataType.BIGINT),
+    CID ("cid", SQLDataType.BIGINT),
+    ACLITEM ("aclitem", SQLDataType.VARCHAR),
+    NAME ("name", SQLDataType.VARCHAR),
+    REGPROC ( "regproc", SQLDataType.VARCHAR);
 
     private String key;
     private DataType<?> dataType;

@@ -66,7 +66,7 @@ public class Config {
 
     public SourceConnectionDao setupSourceConnection() throws ConnectionFailureException {
         String url = setupUrl(dbTypeSource.getPlaceholder(), hostSource, portSource, dbNameSource);
-        SourceConnectionDao connection = new SourceConnectionDao(url, usernameSource, passwordSource);
+        SourceConnectionDao connection = new SourceConnectionDao(url, usernameSource, passwordSource, dbTypeSource.getSQLDialect());
         try {
             if (connection.testConnection()) return connection;
         } catch(SQLException e) {
@@ -74,7 +74,6 @@ public class Config {
         }
         throw new ConnectionFailureException("Could not connect to SOURCE DB");
     }
-
 
     public TargetConnectionDao setupTargetConnection(GenerationService generationService) throws ConnectionFailureException {
         String url = setupUrl(dbTypeTarget.getPlaceholder(), hostTarget, portTarget, dbNameTarget);

@@ -1,16 +1,21 @@
 package com.kevindeyne.datascrambler.dao;
 
+import com.kevindeyne.datascrambler.domain.distributionmodel.Generator;
 import com.kevindeyne.datascrambler.domain.distributionmodel.ValueDistribution;
+import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
+import com.kevindeyne.datascrambler.mapping.ColumnTypeMapping;
+import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 import org.jooq.*;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
+import org.jooq.impl.SQLDataType;
+import org.jooq.util.postgres.PostgresUtils;
 
 import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.*;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -23,18 +28,21 @@ public class SourceConnectionDao {
     private final String url;
     private final String username;
     private final String password;
+    private final SQLDialect sqlDialect;
 
-    public SourceConnectionDao(String url, String username, String password) {
+    public SourceConnectionDao(String url, String username, String password, SQLDialect sqlDialect) {
         this.url = url;
         this.username = username;
         this.password = password;
+        this.sqlDialect = sqlDialect;
     }
 
     public boolean testConnection() throws SQLException {
-        Connection connection = DriverManager.getConnection(url, username, password);
-        DSLContext dsl = using(new DefaultConfiguration().derive(connection));
-        Short[] result = dsl.selectOne().fetch().intoArray(0, Short.class);
-        return result.length == 1 && result[0] == 1;
+        try (Connection connection = DriverManager.getConnection(url, username, password)) {
+            DSLContext dsl = using(new DefaultConfiguration().derive(connection));
+            Short[] result = dsl.selectOne().fetch().intoArray(0, Short.class);
+            return result.length == 1 && result[0] == 1;
+        }
     }
 
     public List<Table<?>> getAllTables(DataSource dataSource, String schemaName) {
@@ -73,5 +81,32 @@ public class SourceConnectionDao {
         ds.setPassword(this.password);
         ds.setUsername(this.username);
         return ds;
+    }
+
+    public Generator manualDetermineGenerator(String tableName, String fieldName) {
+        try (Connection connection = DriverManager.getConnection(url, username, password);
+            Statement st = connection.createStatement();
+            ResultSet rs = st.executeQuery("SELECT " + quotedName(fieldName) + " FROM " + quotedName(tableName))) {
+            ResultSetMetaData metaData = rs.getMetaData();
+            Class<?> matchingJavaClass;
+            String key;
+            try {
+                final DataTypeMapping typeMapping = DataTypeMapping.findByKey(metaData.getColumnTypeName(1));
+                matchingJavaClass = typeMapping.getDataType().getType();
+                key = typeMapping.getKey();
+            } catch (IllegalArgumentException e) {
+                try {
+                    matchingJavaClass = ColumnTypeMapping.findByKey(metaData.getColumnType(1)).getType();
+                    key = DataTypeMapping.findByKey(ColumnTypeMapping.findByKey(metaData.getColumnType(1)).name().toLowerCase()).getKey();
+                } catch (IllegalArgumentException i) {
+                    matchingJavaClass = SQLDataType.CLOB.getType();
+                    key = DataTypeMapping.CLOB.getKey();
+                }
+            }
+            final boolean nullable = ResultSetMetaData.columnNullable == metaData.isNullable(1);
+            return new Generator(metaData.getColumnDisplaySize(1), metaData.getPrecision(1), matchingJavaClass.getName(), key, nullable);
+        } catch (Exception e) {
+            throw new RuntimeException("Error during manual determining of generator", e);
+        }
     }
 }

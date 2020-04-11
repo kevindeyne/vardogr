@@ -41,9 +41,13 @@ public class DistributionModelService {
             List<Table<?>> allTables = sourceConnectionDao.getAllTables(dataSource, schema);
             CountDownLatch latch = new CountDownLatch(allTables.size());
 
+            final DefaultConfiguration configuration = new DefaultConfiguration();
+            configuration.setSQLDialect(sourceConnectionDao.getSqlDialect());
+            configuration.setSettings(configuration.settings().withParseDialect(sourceConnectionDao.getSqlDialect()));
+
             try (ProgressBar pb = new ProgressBar("Building model", calculateTotalFieldsForModel(allTables))) {
                 allTables.forEach(table -> threadPool.execute(() -> {
-                    try (DSLContext dsl = using(new DefaultConfiguration().derive(dataSource))) {
+                    try (DSLContext dsl = using(configuration.derive(dataSource))) {
                         TableData tableData = new TableData(table.getName());
                         tableData.setTotalCount(sourceConnectionDao.count(tableData.getTableName(), dsl));
 
@@ -58,7 +62,11 @@ public class DistributionModelService {
 
                         Arrays.stream(table.fields()).forEach(f -> {
                             FieldData fieldData = new FieldData(f.getName());
-                            fieldData.setGenerator(determineGenerator(f));
+                            try {
+                                fieldData.setGenerator(determineGenerator(f));
+                            } catch (IllegalArgumentException e) {
+                                fieldData.setGenerator(sourceConnectionDao.manualDetermineGenerator(tableData.getTableName(), f.getName()));
+                            }
                             fieldData.setValueDistribution(sourceConnectionDao.determineDistribution(table, f, tableData.getTotalCount(), dsl));
 
                             if(primaryKeys.contains(f.getName())) fieldData.setPrimaryKey(true);
@@ -89,10 +97,10 @@ public class DistributionModelService {
 
     private Generator determineGenerator(Field<?> f) {
         DataType<?> dataType = f.getDataType();
-        int length = dataType.length();
-        int precision = dataType.precision();
-        String type = dataType.getType().getTypeName();
-        boolean nullable = dataType.nullable();
+        final int length = dataType.length();
+        final int precision = dataType.precision();
+        final boolean nullable = dataType.nullable();
+        final String type = dataType.getType().getTypeName();
         try {
             String key = DataTypeMapping.findByKey(dataType.getTypeName()).getKey();
             return new Generator(length, precision, type, key, nullable);
