@@ -2,20 +2,19 @@ package com.kevindeyne.datascrambler.dao;
 
 import com.kevindeyne.datascrambler.domain.distributionmodel.Generator;
 import com.kevindeyne.datascrambler.domain.distributionmodel.ValueDistribution;
-import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
 import com.kevindeyne.datascrambler.mapping.ColumnTypeMapping;
 import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 import org.jooq.*;
+import org.jooq.conf.ParamType;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
 import org.jooq.impl.SQLDataType;
-import org.jooq.util.postgres.PostgresUtils;
 
 import javax.sql.DataSource;
-import java.sql.*;
 import java.sql.Statement;
+import java.sql.*;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -83,10 +82,11 @@ public class SourceConnectionDao {
         return ds;
     }
 
-    public Generator manualDetermineGenerator(String tableName, String fieldName) {
+    public Generator manualDetermineGenerator(DSLContext dsl, String tableName, String fieldName) {
+        final SelectLimitPercentStep<Record1<Object>> sql = dsl.select(field(quotedName(fieldName))).from(table(quotedName(tableName))).limit(1);
         try (Connection connection = DriverManager.getConnection(url, username, password);
-            Statement st = connection.createStatement();
-            ResultSet rs = st.executeQuery("SELECT " + quotedName(fieldName) + " FROM " + quotedName(tableName))) {
+             Statement st = connection.createStatement();
+             ResultSet rs = st.executeQuery(sql.getSQL(ParamType.INLINED))) {
             ResultSetMetaData metaData = rs.getMetaData();
             Class<?> matchingJavaClass;
             String key;

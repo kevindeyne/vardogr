@@ -26,7 +26,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static org.jooq.impl.DSL.using;
+import static org.jooq.impl.DSL.*;
 
 @Service
 public class DistributionModelService {
@@ -66,7 +66,7 @@ public class DistributionModelService {
                             try {
                                 fieldData.setGenerator(determineGenerator(f));
                             } catch (IllegalArgumentException e) {
-                                fieldData.setGenerator(sourceConnectionDao.manualDetermineGenerator(tableData.getTableName(), f.getName()));
+                                fieldData.setGenerator(sourceConnectionDao.manualDetermineGenerator(dsl, tableData.getTableName(), f.getName()));
                             }
                             fieldData.setValueDistribution(sourceConnectionDao.determineDistribution(table, f, tableData.getTotalCount(), dsl));
 
