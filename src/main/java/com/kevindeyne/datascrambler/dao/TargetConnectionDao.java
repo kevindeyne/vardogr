@@ -9,21 +9,30 @@ import com.kevindeyne.datascrambler.service.GenerationService;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 import me.tongfei.progressbar.ProgressBar;
-import org.jooq.*;
+import org.jooq.CreateTableColumnStep;
+import org.jooq.DSLContext;
+import org.jooq.DataType;
+import org.jooq.Field;
+import org.jooq.Table;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
-import org.jooq.impl.SQLDataType;
 
 import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.jooq.impl.DSL.*;
+import static org.jooq.impl.DSL.constraint;
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.quotedName;
+import static org.jooq.impl.DSL.table;
+import static org.jooq.impl.DSL.using;
 
 @Data
 public class TargetConnectionDao {
@@ -69,8 +78,7 @@ public class TargetConnectionDao {
         List<Field<?>> primaryKeys = new ArrayList<>();
         CreateTableColumnStep createStep = null;
         try {
-            createStep = dsl.createTable(table(quotedName(table.getTableName())));
-
+            createStep = dsl.createTable(table(quotedName(table.getTableName()))); //cannot be a final variable, so no try-resources - manually close
             for (FieldData fieldData : table.getFieldData()) {
                 final Generator generator = fieldData.getGenerator();
                 DataType<?> dataType = DataTypeMapping.findByKey(generator.getDataTypeKey()).getDataType();
@@ -97,8 +105,6 @@ public class TargetConnectionDao {
         //TODO
     }
 
-    private ExecutorService threadPool = Executors.newFixedThreadPool(50);
-
     public void pushData(DSLContext dsl, TableData table) {
         List<Field<?>> fields = table.getFieldData().stream().map(f -> field(quotedName(f.getFieldName()))).collect(Collectors.toCollection(LinkedList::new));
 
@@ -109,7 +115,7 @@ public class TargetConnectionDao {
 
         Map<String, Map<Double, ValueDistribution.MutableInt>> percentagesHandled = new HashMap<>();
 
-        try (ProgressBar pb = new ProgressBar("Generating data for " + table.getTableName() + " (" + table.getOrderOfExecution() + ")", total)) {
+        try (ProgressBar pb = new ProgressBar("Generating data for " + table.getTableName(), total)) {
             for (long i = 0; i < total; i++) {
                 List<Object> data = new LinkedList<>();
 
@@ -156,20 +162,19 @@ public class TargetConnectionDao {
         Map<Double, ValueDistribution.MutableInt> percentagesHandled = percentagesHandledPerField.get(field.getFieldName());
         final Map<Double, ValueDistribution.MutableInt> percentages = field.getValueDistribution().getPercentages();
         Double percentage = null;
-        for (Map.Entry<Double, ValueDistribution.MutableInt> percentageToPossiblyHandle : percentages.entrySet()) {
-            if (!percentagesHandled.containsKey(percentageToPossiblyHandle.getKey())) {
-                percentagesHandled.put(percentageToPossiblyHandle.getKey(), new ValueDistribution.MutableInt());
-                percentage = percentageToPossiblyHandle.getKey();
+        for (Double percentageToPossiblyHandle : percentages.keySet()) {
+            if (!percentagesHandled.containsKey(percentageToPossiblyHandle)) {
+                percentagesHandled.put(percentageToPossiblyHandle, new ValueDistribution.MutableInt());
+                percentage = percentageToPossiblyHandle;
                 break;
-            } else if (percentagesHandled.get(percentageToPossiblyHandle.getKey()).get() < percentageToPossiblyHandle.getValue().get()) {
-                percentagesHandled.put(percentageToPossiblyHandle.getKey(), percentagesHandled.get(percentageToPossiblyHandle.getKey()).increment());
-                percentage = percentageToPossiblyHandle.getKey();
+            } else if (percentagesHandled.get(percentageToPossiblyHandle).get() < percentages.get(percentageToPossiblyHandle).get()) {
+                percentagesHandled.put(percentageToPossiblyHandle, percentagesHandled.get(percentageToPossiblyHandle).increment());
+                percentage = percentageToPossiblyHandle;
                 break;
             }
         }
-        if (null == percentage) {
-            return 0.0001D;
-            //throw new RuntimeException("Could not find percentage");
+        if (null == percentage) { //this is, essentially, a rounding error. If percentages don't count up to 100% but go to 99.999%, that 0.0001% needs to be accounted for
+            return 0.0001D; //could probably introduce a percentage cleanup round after determining them too; but this will do for now
         }
         return percentage;
     }
