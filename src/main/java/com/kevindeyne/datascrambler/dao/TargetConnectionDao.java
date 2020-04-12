@@ -109,7 +109,7 @@ public class TargetConnectionDao {
 
         Map<String, Map<Double, ValueDistribution.MutableInt>> percentagesHandled = new HashMap<>();
 
-        try (ProgressBar pb = new ProgressBar("Generating data for " + table.getTableName(), total)) {
+        try (ProgressBar pb = new ProgressBar("Generating data for " + table.getTableName() + " (" + table.getOrderOfExecution() + ")", total)) {
             for (long i = 0; i < total; i++) {
                 List<Object> data = new LinkedList<>();
 

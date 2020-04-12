@@ -19,9 +19,8 @@ import org.jooq.impl.DefaultConfiguration;
 import org.jooq.util.postgres.PostgresDataType;
 import org.springframework.stereotype.Service;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
+import java.util.Comparator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -45,13 +44,15 @@ public class DistributionModelService {
             configuration.setSQLDialect(sourceConnectionDao.getSqlDialect());
             configuration.setSettings(configuration.settings().withParseDialect(sourceConnectionDao.getSqlDialect()));
 
+            final List<String> orderOfExecutionList = determineOrderOfExecution(allTables);
+
             try (ProgressBar pb = new ProgressBar("Building model", calculateTotalFieldsForModel(allTables))) {
                 threadPool = Executors.newFixedThreadPool(10);
                 allTables.forEach(table -> threadPool.execute(() -> {
                     try (DSLContext dsl = using(configuration.derive(dataSource))) {
                         TableData tableData = new TableData(table.getName());
                         tableData.setTotalCount(sourceConnectionDao.count(tableData.getTableName(), dsl));
-
+                        tableData.setOrderOfExecution(orderOfExecutionList.indexOf(tableData.getTableName()));
                         List<String> primaryKeys = new ArrayList<>();
                         for(UniqueKey<?> key : table.getKeys()) {
                             if(key.isPrimary()) {
@@ -91,6 +92,39 @@ public class DistributionModelService {
             threadPool.shutdown();
             dataSource.close();
         }
+    }
+
+    public <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
+        List<Map.Entry<K, V>> list = new ArrayList<>(map.entrySet());
+        list.sort(Map.Entry.comparingByValue());
+
+        Map<K, V> result = new LinkedHashMap<>();
+        for (Map.Entry<K, V> entry : list) {
+            result.put(entry.getKey(), entry.getValue());
+        }
+
+        return result;
+    }
+
+    public List<String> determineOrderOfExecution(List<Table<?>> allTables) {
+        LinkedList<String> orderOfExecutionList = new LinkedList<>();
+        for (Table<?> allTable : allTables) orderOfExecutionList.add(allTable.getName());
+        allTables.forEach(table -> {
+            for(ForeignKey<?, ?> fk : table.getReferences()) {
+                final String foreignTable = fk.getKey().getTable().getName();
+                final String currentTable = table.getName();
+
+                //foreign needs to be BEFORE currentTable
+                if(orderOfExecutionList.indexOf(foreignTable) > orderOfExecutionList.indexOf(currentTable)){
+                    //remove foreign key from list
+                    orderOfExecutionList.remove(foreignTable);
+                    //re-add in correct position (before current table)
+                    orderOfExecutionList.add(orderOfExecutionList.indexOf(currentTable), foreignTable);
+
+                }
+            }
+        });
+        return orderOfExecutionList;
     }
 
     private int calculateTotalFieldsForModel(List<Table<?>> allTables) {

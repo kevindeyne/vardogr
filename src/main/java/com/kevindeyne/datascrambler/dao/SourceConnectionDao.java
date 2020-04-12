@@ -8,6 +8,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 import org.jooq.*;
 import org.jooq.conf.ParamType;
+import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
 import org.jooq.impl.SQLDataType;
@@ -46,6 +47,7 @@ public class SourceConnectionDao {
 
     public List<Table<?>> getAllTables(DataSource dataSource, String schemaName) {
         try (DSLContext dsl = using(new DefaultConfiguration().derive(dataSource))) {
+            dsl.settings().setExecuteLogging(false);
             final Optional<Schema> optionalSchema = dsl.meta().getSchemas().stream()
                     .filter(s -> s.getName().equals(schemaName))
                     .findFirst();
