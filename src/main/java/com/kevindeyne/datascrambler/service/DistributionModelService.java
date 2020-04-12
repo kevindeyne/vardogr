@@ -1,6 +1,5 @@
 package com.kevindeyne.datascrambler.service;
 
-import com.google.gson.Gson;
 import com.kevindeyne.datascrambler.dao.SourceConnectionDao;
 import com.kevindeyne.datascrambler.dao.TargetConnectionDao;
 import com.kevindeyne.datascrambler.domain.distributionmodel.DistributionModel;
@@ -12,20 +11,15 @@ import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.zaxxer.hikari.HikariDataSource;
 import me.tongfei.progressbar.ProgressBar;
 import org.jooq.*;
-import org.jooq.conf.RenderNameStyle;
-import org.jooq.conf.RenderQuotedNames;
-import org.jooq.conf.Settings;
 import org.jooq.impl.DefaultConfiguration;
-import org.jooq.util.postgres.PostgresDataType;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.Comparator;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static org.jooq.impl.DSL.*;
+import static org.jooq.impl.DSL.using;
 
 @Service
 public class DistributionModelService {
