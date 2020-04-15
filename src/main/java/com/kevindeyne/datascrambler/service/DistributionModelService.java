@@ -2,10 +2,7 @@ package com.kevindeyne.datascrambler.service;
 
 import com.kevindeyne.datascrambler.dao.SourceConnectionDao;
 import com.kevindeyne.datascrambler.dao.TargetConnectionDao;
-import com.kevindeyne.datascrambler.domain.distributionmodel.DistributionModel;
-import com.kevindeyne.datascrambler.domain.distributionmodel.FieldData;
-import com.kevindeyne.datascrambler.domain.distributionmodel.Generator;
-import com.kevindeyne.datascrambler.domain.distributionmodel.TableData;
+import com.kevindeyne.datascrambler.domain.distributionmodel.*;
 import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
 import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.zaxxer.hikari.HikariDataSource;
@@ -66,7 +63,11 @@ public class DistributionModelService {
                             fieldData.setValueDistribution(sourceConnectionDao.determineDistribution(table, f, tableData.getTotalCount(), dsl));
 
                             if(primaryKeys.contains(f.getName())) fieldData.setPrimaryKey(true);
-                            //TODO determine if field is FK with other table
+
+                            table.getReferences().stream().filter(fk -> fk.getFields().get(0).getName().equals(f.getName())).forEach(fk ->
+                                     fk.getKey().getFields().forEach(k ->
+                                            fieldData.getForeignKeyData().add(new ForeignKeyData(fk.getKey().getTable().getName(), k.getName())))
+                            );
 
                             tableData.getFieldData().add(fieldData);
                             pb.step();

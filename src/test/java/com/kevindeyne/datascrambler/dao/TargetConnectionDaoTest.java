@@ -19,8 +19,7 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.*;
 
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.*;
 
 public class TargetConnectionDaoTest {
 
@@ -55,9 +54,9 @@ public class TargetConnectionDaoTest {
         fieldData.setValueDistribution(valueDistribution);
         table.setFieldData(Collections.singletonList(fieldData));
 
-        Mockito.when(generationService.generate(anyString(), anyInt(), anyString())).thenReturn(UUID.randomUUID());
+        Mockito.when(generationService.generate(anyString(), anyInt(), any(FieldData.class))).thenReturn(UUID.randomUUID());
         dao.pushData(dsl, table);
-        Mockito.verify(generationService, Mockito.times(3)).generate(anyString(), anyInt(), anyString());
+        Mockito.verify(generationService, Mockito.times(3)).generate(anyString(), anyInt(), any(FieldData.class));
     }
 
 }

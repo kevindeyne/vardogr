@@ -1,6 +1,7 @@
 package com.kevindeyne.datascrambler.service;
 
 import com.devskiller.jfairy.Fairy;
+import com.kevindeyne.datascrambler.domain.distributionmodel.FieldData;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -46,11 +47,16 @@ public class GenerationService {
         }
     }
 
-    public Object generate(String classIdentifier, int maxLength, String fieldName) {
+    public Object generate(String classIdentifier, int maxLength, FieldData field) {
         if (String.class.getName().equals(classIdentifier)) {
-            return generateString(maxLength, fieldName);
+            return generateString(maxLength, field.getFieldName());
         } else if (Integer.class.getName().equals(classIdentifier)) {
-            return generateInteger(maxLength);
+            if(field.isPrimaryKey()) {
+                field.setOffset(field.getOffset() + 1);
+                return field.getOffset();
+            } else {
+                return generateInteger(maxLength);
+            }
         } else if (Short.class.getName().equals(classIdentifier)) {
             return Math.abs(RANDOM.nextInt(Short.MAX_VALUE));
         } else if(BigDecimal.class.getName().equals(classIdentifier)) {

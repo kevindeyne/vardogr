@@ -1,19 +1,13 @@
 package com.kevindeyne.datascrambler.dao;
 
-import com.kevindeyne.datascrambler.domain.distributionmodel.FieldData;
-import com.kevindeyne.datascrambler.domain.distributionmodel.Generator;
-import com.kevindeyne.datascrambler.domain.distributionmodel.TableData;
-import com.kevindeyne.datascrambler.domain.distributionmodel.ValueDistribution;
+import com.kevindeyne.datascrambler.domain.distributionmodel.*;
 import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.kevindeyne.datascrambler.service.GenerationService;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 import me.tongfei.progressbar.ProgressBar;
-import org.jooq.CreateTableColumnStep;
-import org.jooq.DSLContext;
-import org.jooq.DataType;
-import org.jooq.Field;
-import org.jooq.Table;
+import org.jooq.*;
+import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
 
@@ -21,18 +15,10 @@ import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.jooq.impl.DSL.constraint;
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.quotedName;
-import static org.jooq.impl.DSL.table;
-import static org.jooq.impl.DSL.using;
+import static org.jooq.impl.DSL.*;
 
 @Data
 public class TargetConnectionDao {
@@ -71,7 +57,7 @@ public class TargetConnectionDao {
     }
 
     public void truncate(DSLContext dsl, String tableName) {
-        dsl.truncate(DSL.table(tableName)).execute();
+        dsl.truncate(DSL.table(tableName)).cascade().execute();
     }
 
     public void createTable(DSLContext dsl, TableData table) {
@@ -99,6 +85,14 @@ public class TargetConnectionDao {
         if (!primaryKeys.isEmpty()) {
             dsl.alterTable(table(quotedName(table.getTableName()))).add(constraint().primaryKey(primaryKeys.toArray(new Field<?>[0]))).execute();
         }
+
+        table.getFieldData().forEach(fieldData ->
+            fieldData.getForeignKeyData().forEach(fk ->
+                dsl.alterTable(table(quotedName(table.getTableName())))
+                        .add(foreignKey(field(quotedName(fieldData.getFieldName()))).references(quotedName(fk.getTable()), quotedName(fk.getKey())))
+                        .execute()
+            )
+        );
     }
 
     public void validateTable(DSLContext dsl, TableData table) {
@@ -122,7 +116,6 @@ public class TargetConnectionDao {
                 for (FieldData field : table.getFieldData()) {
                     final String fieldName = field.getFieldName();
                     Long skipListValue = skipList.get(fieldName);
-
                     if (skipListValue == null || field.isPrimaryKey()) {
                         Double percentage = determineActivePercentage(percentagesHandled, field);
 
@@ -130,7 +123,11 @@ public class TargetConnectionDao {
 
                         skipList.put(fieldName, skipTo);
                         Object gen;
-                        do { gen = generateNewDataField(field); } while(skipListData.containsValue(gen));
+
+                        do {
+                            gen = generateNewDataField(dsl, field);
+                        } while (skipListData.containsValue(gen));
+
                         skipListData.put(fieldName, gen);
                         skipListValue = skipTo;
                     }
@@ -143,9 +140,19 @@ public class TargetConnectionDao {
                     }
                 }
 
-                dsl.insertInto(table(quotedName(table.getTableName())), fields)
-                        .values(data)
-                        .execute();
+                try {
+                    dsl.insertInto(table(quotedName(table.getTableName())), fields)
+                            .values(data)
+                            .execute();
+                } catch (DataAccessException e) {
+                    if(e.getMessage().contains("duplicate") || e.getMessage().contains(" violates foreign key")) {
+                        //System.err.println(e.getMessage() + " for table: " + table.getTableName());
+                        pb.step();
+                        continue;
+                    }
+
+                    throw e;
+                }
                 pb.step();
             }
         }
@@ -179,8 +186,22 @@ public class TargetConnectionDao {
         return percentage;
     }
 
-    private Object generateNewDataField(FieldData field) {
-        final Generator g = field.getGenerator();
-        return generationService.generate(g.getOriginalType(), g.getLength(), field.getFieldName());
+    private Object generateNewDataField(DSLContext dsl, FieldData field) {
+        if(field.getForeignKeyData().isEmpty()) {
+            final Generator g = field.getGenerator();
+            return generationService.generate(g.getOriginalType(), g.getLength(), field);
+        } else {
+            ForeignKeyData fk = field.getForeignKeyData().get(0); //TODO not sure how multiple FKS works
+
+            final Record1<Object> results = dsl.select(field(quotedName(fk.getKey()))).from(table(quotedName(fk.getTable()))).where().limit(1).offset(field.getOffset()).fetchOne();
+            if (results == null) {
+                final Generator g = field.getGenerator();
+                return generationService.generate(g.getOriginalType(), g.getLength(), field);
+            }
+            final Object result = results.component1();
+
+            field.setOffset(field.getOffset()+1);
+            return result;
+        }
     }
 }

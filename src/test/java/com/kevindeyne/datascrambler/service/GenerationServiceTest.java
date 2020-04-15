@@ -1,5 +1,6 @@
 package com.kevindeyne.datascrambler.service;
 
+import com.kevindeyne.datascrambler.domain.distributionmodel.FieldData;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -19,7 +20,8 @@ public class GenerationServiceTest {
     @Test
     public void testGenerateString() {
         int maxLength = new Random().nextInt(53);
-        String stringData = (String) generationService.generate(String.class.getName(), maxLength, "firstName");
+        FieldData field = new FieldData("firstName");
+        String stringData = (String) generationService.generate(String.class.getName(), maxLength, field);
         Assert.assertNotNull(stringData);
         Assert.assertTrue(stringData.length() <= maxLength);
         System.out.println(stringData);
