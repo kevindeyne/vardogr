@@ -5,7 +5,7 @@ import com.google.gson.annotations.SerializedName;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.List;
+import java.util.Set;
 
 @Data
 @NoArgsConstructor
@@ -16,7 +16,7 @@ public class ForeignKeyData {
     @SerializedName(value = "k")
     private String key;
     @Expose(serialize = false)
-    private List<Object> possibleValues;
+    private Set<Object> possibleValues;
 
     public ForeignKeyData(String table, String key) {
         this.table = table;

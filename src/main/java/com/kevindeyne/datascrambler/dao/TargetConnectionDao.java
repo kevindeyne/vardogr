@@ -3,6 +3,7 @@ package com.kevindeyne.datascrambler.dao;
 import com.kevindeyne.datascrambler.domain.distributionmodel.*;
 import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.kevindeyne.datascrambler.service.GenerationService;
+import com.kevindeyne.datascrambler.service.PKDistributionService;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 import me.tongfei.progressbar.ProgressBar;
@@ -16,6 +17,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.jooq.impl.DSL.*;
 
@@ -25,12 +27,14 @@ public class TargetConnectionDao {
     private final String username;
     private final String password;
     private final GenerationService generationService;
+    private final PKDistributionService pkDistributionService;
 
-    public TargetConnectionDao(String url, String username, String password, GenerationService generationService) {
+    public TargetConnectionDao(String url, String username, String password, GenerationService generationService, PKDistributionService pkDistributionService) {
         this.url = url;
         this.username = username;
         this.password = password;
         this.generationService = generationService;
+        this.pkDistributionService = pkDistributionService;
     }
 
     public boolean testConnection() throws SQLException {
@@ -108,35 +112,45 @@ public class TargetConnectionDao {
 
         Map<String, Map<Double, ValueDistribution.MutableInt>> percentagesHandled = new HashMap<>();
 
-        prefetchFKValues(dsl, table);
+        prefetchFKValues(dsl, table); //TODO too much memory?
+
+        final List<Map<String, Object>> pkData = pkDistributionService.generatePrimaryKey(table);
 
         try (ProgressBar pb = new ProgressBar("Generating data for " + table.getTableName(), total)) {
             for (long i = 0; i < total; i++) {
                 List<Object> data = new LinkedList<>();
                 for (FieldData field : table.getFieldData()) {
                     final String fieldName = field.getFieldName();
+                    if(field.isPrimaryKey()) {
+                        if(field.getForeignKeyData() != null) {
+                            final Object pkId = pkData.get((int) i).get(fieldName);
+                            data.add(pkId);
+                        } else {
+                            data.add(generateNewDataField(field));
+                        }
+                    } else {
+                        Long skipListValue = skipList.get(fieldName);
+                        if (skipListValue == null) {
+                            Double percentage = determineActivePercentage(percentagesHandled, field);
 
-                    Long skipListValue = skipList.get(fieldName);
-                    if (skipListValue == null || (field.isPrimaryKey() && field.getForeignKeyData() == null)) {
-                        Double percentage = determineActivePercentage(percentagesHandled, field);
+                            long skipTo = calculateSkipTo(total, i, percentage);
+                            skipList.put(fieldName, skipTo);
+                            Object gen;
 
-                        long skipTo = calculateSkipTo(total, i, percentage);
-                        skipList.put(fieldName, skipTo);
-                        Object gen;
+                            do {
+                                gen = generateNewDataField(field);
+                            } while (skipListData.containsValue(gen));
 
-                        do {
-                            gen = generateNewDataField(field);
-                        } while (skipListData.containsValue(gen));
+                            skipListData.put(fieldName, gen);
+                            skipListValue = skipTo;
+                        }
 
-                        skipListData.put(fieldName, gen);
-                        skipListValue = skipTo;
-                    }
+                        data.add(skipListData.get(fieldName));
 
-                    data.add(skipListData.get(fieldName));
-
-                    if (i + 1 == skipListValue) {
-                        skipList.put(fieldName, null);
-                        skipListData.put(fieldName, null);
+                        if (i + 1 == skipListValue) {
+                            skipList.put(fieldName, null);
+                            skipListData.put(fieldName, null);
+                        }
                     }
                 }
 
@@ -164,8 +178,8 @@ public class TargetConnectionDao {
                 ForeignKeyData fk = field.getForeignKeyData();
                 final Name tableName = quotedName(fk.getTable());
                 final Name fieldName = quotedName(fk.getKey());
-                final List<Object> results = dsl.selectDistinct().from(table(tableName)).fetch(field(fieldName), Object.class);
-                field.getForeignKeyData().setPossibleValues(results);
+                final Set<Object> results = dsl.selectDistinct().from(table(tableName)).fetchSet(field(fieldName), Object.class);
+                field.getForeignKeyData().setPossibleValues(results.parallelStream().filter(Objects::nonNull).collect(Collectors.toSet()));
             }
         }
     }
@@ -202,7 +216,7 @@ public class TargetConnectionDao {
         final ForeignKeyData fk = field.getForeignKeyData();
         if(null != fk) {
             if(fk.getPossibleValues().size() <= field.getOffset()) return null;
-            final Object result = fk.getPossibleValues().get(field.getOffset());
+            final Object result = fk.getPossibleValues().toArray()[field.getOffset()];
             field.setOffset(field.getOffset()+1);
             return result;
         } else {
