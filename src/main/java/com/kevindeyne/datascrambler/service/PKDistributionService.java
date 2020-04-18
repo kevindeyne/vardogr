@@ -30,7 +30,8 @@ public class PKDistributionService {
             fieldMapping[i] = lists.get(lists.size() - i - 1).getFieldName();
         }
 
-        final Set<Set<Object>> sets = cartesianProduct(0, size, lists.size(), array);
+        Set<Set<Object>> sets = cartesianProduct(0, array);
+        sets = sets.stream().filter(s-> s.size() == lists.size()).limit(size).collect(Collectors.toSet());
         for (Set<Object> set : sets) {
             int index = 0;
             Map<String, Object> key = new HashMap<>();
@@ -42,17 +43,16 @@ public class PKDistributionService {
         return pks;
     }
 
-    private Set<Set<Object>> cartesianProduct(int index, long limit, final int expectedSets, Set<?>... sets) {
+    private Set<Set<Object>> cartesianProduct(int index, Set<?>... sets) {
         Set<Set<Object>> ret = new LinkedHashSet<>();
         if (index == sets.length) {
             ret.add(new LinkedHashSet<>());
         } else {
             for (Object obj : sets[index]) {
                 int innerIndex = index + 1;
-                for (Set<Object> set : cartesianProduct(innerIndex, limit, expectedSets, sets)) {
+                for (Set<Object> set : cartesianProduct(innerIndex, sets)) {
                     set.add(obj);
                     ret.add(set);
-                    if (ret.stream().filter(r -> r.size() == expectedSets).count() == limit) return ret;
                 }
             }
         }

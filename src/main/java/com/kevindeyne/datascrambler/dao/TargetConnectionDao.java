@@ -17,7 +17,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.jooq.impl.DSL.*;
 
@@ -179,7 +178,7 @@ public class TargetConnectionDao {
                 final Name tableName = quotedName(fk.getTable());
                 final Name fieldName = quotedName(fk.getKey());
                 final Set<Object> results = dsl.selectDistinct().from(table(tableName)).fetchSet(field(fieldName), Object.class);
-                field.getForeignKeyData().setPossibleValues(results.parallelStream().filter(Objects::nonNull).collect(Collectors.toSet()));
+                field.getForeignKeyData().setPossibleValues(results);
             }
         }
     }
