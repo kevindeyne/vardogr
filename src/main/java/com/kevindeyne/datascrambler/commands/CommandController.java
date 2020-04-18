@@ -8,10 +8,7 @@ import com.kevindeyne.datascrambler.domain.distributionmodel.TableData;
 import com.kevindeyne.datascrambler.exceptions.ConfigFileException;
 import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
 import com.kevindeyne.datascrambler.helper.PrintCmds;
-import com.kevindeyne.datascrambler.service.ConfigService;
-import com.kevindeyne.datascrambler.service.DistributionModelService;
-import com.kevindeyne.datascrambler.service.FileService;
-import com.kevindeyne.datascrambler.service.GenerationService;
+import com.kevindeyne.datascrambler.service.*;
 import com.zaxxer.hikari.HikariDataSource;
 import org.jooq.DSLContext;
 import org.jooq.Named;
@@ -32,19 +29,22 @@ public class CommandController {
 
     private static final String DISTRIBUTION_MODEL_JSON = "distribution-model.json";
 
-    private ConfigService configService;
-    private DistributionModelService distributionModelService;
-    private FileService fileService;
-    private GenerationService generationService;
+    private final ConfigService configService;
+    private final DistributionModelService distributionModelService;
+    private final FileService fileService;
+    private final GenerationService generationService;
+    private final PKDistributionService pkDistributionService;
 
     public CommandController(ConfigService configService,
                              DistributionModelService distributionModelService,
                              FileService fileService,
-                             GenerationService generationService) {
+                             GenerationService generationService,
+                             PKDistributionService pkDistributionService) {
         this.configService = configService;
         this.distributionModelService = distributionModelService;
         this.fileService = fileService;
         this.generationService = generationService;
+        this.pkDistributionService = pkDistributionService;
     }
 
     @PostConstruct
@@ -82,7 +82,7 @@ public class CommandController {
         final TargetConnectionDao targetConnectionDao;
         try {
             Config config = configService.loadTargetConfig();
-            targetConnectionDao = config.setupTargetConnection(generationService);
+            targetConnectionDao = config.setupTargetConnection(generationService, pkDistributionService);
 
             DistributionModel model = fileService.loadModel(DISTRIBUTION_MODEL_JSON);
 

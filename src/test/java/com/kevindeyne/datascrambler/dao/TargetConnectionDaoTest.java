@@ -6,7 +6,9 @@ import com.kevindeyne.datascrambler.domain.distributionmodel.TableData;
 import com.kevindeyne.datascrambler.domain.distributionmodel.ValueDistribution;
 import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.kevindeyne.datascrambler.service.GenerationService;
-import org.jooq.*;
+import com.kevindeyne.datascrambler.service.PKDistributionService;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
 import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 import org.jooq.tools.jdbc.MockConnection;
@@ -17,7 +19,9 @@ import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.UUID;
 
 import static org.mockito.Matchers.*;
 
@@ -28,10 +32,13 @@ public class TargetConnectionDaoTest {
     @Mock
     private GenerationService generationService;
 
+    @Mock
+    private PKDistributionService pkDistributionService;
+
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
-        dao = new TargetConnectionDao("", "", "", generationService);
+        dao = new TargetConnectionDao("", "", "", generationService, pkDistributionService);
     }
 
     @Test

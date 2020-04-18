@@ -11,6 +11,29 @@ import java.util.stream.Stream;
 
 public class PKDistributionTest {
 
+    private PKDistributionService service = new PKDistributionService();
+
+    @Test
+    public void testDistributionComboPKAsFK_1field() {
+        List<FieldData> fieldData = new ArrayList<>();
+
+        FieldData f1 = new FieldData("actor_id");
+        f1.setPrimaryKey(true);
+        ForeignKeyData fkd = new ForeignKeyData();
+        fkd.setPossibleValues(Stream.of("A", "B", "C", "D", "E").collect(Collectors.toSet()));
+        f1.setForeignKeyData(fkd);
+        fieldData.add(f1);
+
+        final List<Map<String, Object>> pks = service.generatePrimaryKey(fieldData, 3);
+        pks.forEach(System.out::println);
+
+        Assert.assertEquals(3, pks.size());
+        for(Map<String, Object> key : pks) {
+            Assert.assertFalse(isInteger(key.get("actor_id").toString()));
+            Assert.assertEquals(1, key.size());
+        }
+    }
+
     @Test
     public void testDistributionComboPKAsFK_2fields() {
         List<FieldData> fieldData = new ArrayList<>();
@@ -29,13 +52,43 @@ public class PKDistributionTest {
         f2.setForeignKeyData(fkd2);
         fieldData.add(f2);
 
-        final List<Map<String, Object>> pks = generatePrimaryKey(fieldData, 5);
+        final List<Map<String, Object>> pks = service.generatePrimaryKey(fieldData, 5);
         pks.forEach(System.out::println);
 
         Assert.assertEquals(5, pks.size());
         for(Map<String, Object> key : pks) {
             Assert.assertFalse(isInteger(key.get("actor_id").toString()));
             Assert.assertTrue(isInteger(key.get("film_id").toString()));
+            Assert.assertEquals(2, key.size());
+        }
+    }
+
+    @Test
+    public void testDistributionComboPKAsFK_2fields_nolimit() {
+        List<FieldData> fieldData = new ArrayList<>();
+
+        FieldData f1 = new FieldData("actor_id");
+        f1.setPrimaryKey(true);
+        ForeignKeyData fkd = new ForeignKeyData();
+        fkd.setPossibleValues(Stream.of("A", "B", "C", "D", "E").collect(Collectors.toSet()));
+        f1.setForeignKeyData(fkd);
+        fieldData.add(f1);
+
+        FieldData f2 = new FieldData("film_id");
+        f2.setPrimaryKey(true);
+        ForeignKeyData fkd2 = new ForeignKeyData();
+        fkd2.setPossibleValues(Stream.of(1, 2, 3).collect(Collectors.toSet()));
+        f2.setForeignKeyData(fkd2);
+        fieldData.add(f2);
+
+        final List<Map<String, Object>> pks = service.generatePrimaryKey(fieldData, 5000);
+        pks.forEach(System.out::println);
+
+        Assert.assertEquals(15, pks.size());
+        for(Map<String, Object> key : pks) {
+            Assert.assertFalse(isInteger(key.get("actor_id").toString()));
+            Assert.assertTrue(isInteger(key.get("film_id").toString()));
+            Assert.assertEquals(2, key.size());
         }
     }
 
@@ -64,7 +117,7 @@ public class PKDistributionTest {
         f3.setForeignKeyData(fkd3);
         fieldData.add(f3);
 
-        final List<Map<String, Object>> pks = generatePrimaryKey(fieldData, 10);
+        final List<Map<String, Object>> pks = service.generatePrimaryKey(fieldData, 10);
         pks.forEach(System.out::println);
 
         Assert.assertEquals(10, pks.size());
@@ -72,6 +125,7 @@ public class PKDistributionTest {
             Assert.assertFalse(isInteger(key.get("otherID").toString()));
             Assert.assertFalse(isInteger(key.get("actor_id").toString()));
             Assert.assertTrue(isInteger(key.get("film_id").toString()));
+            Assert.assertEquals(3, key.size());
         }
     }
 
@@ -86,44 +140,4 @@ public class PKDistributionTest {
         }
         return true;
     }
-
-    private List<Map<String, Object>> generatePrimaryKey(List<FieldData> fieldData, int size) {
-        List<Map<String, Object>> pks = new ArrayList<>();
-        final List<FieldData> lists = fieldData.stream().filter(FieldData::isPrimaryKey).collect(Collectors.toList());
-        Set<?>[] array = new Set<?>[lists.size()];
-        String[] fieldMapping = new String[lists.size()];
-        for (int i = 0; i < lists.size(); i++) {
-            array[i] = lists.get(i).getForeignKeyData().getPossibleValues();
-            fieldMapping[i] = lists.get(lists.size()-i-1).getFieldName();
-        }
-
-        final Set<Set<Object>> sets = _cartesianProduct(0, size, array);
-        for (Set<Object> set : sets) {
-            int index = 0;
-            Map<String, Object> key = new HashMap<>();
-            for (Object obj : set) {
-                key.put(fieldMapping[index++], obj);
-            }
-            pks.add(key);
-        }
-        return pks;
-    }
-
-    private static Set<Set<Object>> _cartesianProduct(int index, int limit, Set<?>... sets) {
-        Set<Set<Object>> ret = new LinkedHashSet<>();
-        if (index == sets.length) {
-            ret.add(new LinkedHashSet<>());
-        } else {
-            for (Object obj : sets[index]) {
-                int innerIndex = index + 1;
-                for (Set<Object> set : _cartesianProduct(innerIndex, limit, sets)) {
-                    set.add(obj);
-                    ret.add(set);
-                    if(ret.size() == limit) return ret;
-                }
-            }
-        }
-        return ret;
-    }
-
 }

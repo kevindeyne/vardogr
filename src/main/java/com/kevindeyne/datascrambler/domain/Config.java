@@ -7,6 +7,7 @@ import com.kevindeyne.datascrambler.exceptions.ConnectionFailureException;
 import com.kevindeyne.datascrambler.helper.SupportedDBType;
 import com.kevindeyne.datascrambler.service.EncryptService;
 import com.kevindeyne.datascrambler.service.GenerationService;
+import com.kevindeyne.datascrambler.service.PKDistributionService;
 import lombok.Data;
 
 import java.sql.SQLException;
@@ -75,9 +76,9 @@ public class Config {
         throw new ConnectionFailureException("Could not connect to SOURCE DB");
     }
 
-    public TargetConnectionDao setupTargetConnection(GenerationService generationService) throws ConnectionFailureException {
+    public TargetConnectionDao setupTargetConnection(GenerationService generationService, PKDistributionService pkDistributionService) throws ConnectionFailureException {
         String url = setupUrl(dbTypeTarget.getPlaceholder(), hostTarget, portTarget, dbNameTarget);
-        TargetConnectionDao connection = new TargetConnectionDao(url, usernameTarget, passwordTarget, generationService);
+        TargetConnectionDao connection = new TargetConnectionDao(url, usernameTarget, passwordTarget, generationService, pkDistributionService);
         try {
             if (connection.testConnection()) return connection;
         } catch(SQLException e) {
