@@ -135,9 +135,10 @@ public class TargetConnectionDao {
                             long skipTo = calculateSkipTo(total, i, percentage);
                             skipList.put(fieldName, skipTo);
                             Object gen;
-
+                            short maxLoop = 1000;
                             do {
                                 gen = generateNewDataField(field);
+                                if(maxLoop-- < 0) break;
                             } while (skipListData.containsValue(gen));
 
                             skipListData.put(fieldName, gen);
