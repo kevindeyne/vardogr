@@ -4,9 +4,6 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @Data
 public class FieldData {
 
@@ -19,10 +16,9 @@ public class FieldData {
     @SerializedName(value = "p")
     private boolean primaryKey;
     @SerializedName(value = "f")
-    private List<ForeignKeyData> foreignKeyData = new ArrayList<>();
+    private ForeignKeyData foreignKeyData;
     @Expose(serialize = false)
     private int offset = 0;
-
 
     public FieldData(String name) {
         this.fieldName = name;

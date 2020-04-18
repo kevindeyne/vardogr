@@ -16,13 +16,11 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.jooq.impl.DSL.*;
 
 @Data
 public class TargetConnectionDao {
-
     private final String url;
     private final String username;
     private final String password;
@@ -63,8 +61,9 @@ public class TargetConnectionDao {
     public void createTable(DSLContext dsl, TableData table) {
         List<Field<?>> primaryKeys = new ArrayList<>();
         CreateTableColumnStep createStep = null;
+        final Table<Record> tableRef = table(quotedName(table.getTableName()));
         try {
-            createStep = dsl.createTable(table(quotedName(table.getTableName()))); //cannot be a final variable, so no try-resources - manually close
+            createStep = dsl.createTable(tableRef); //cannot be a final variable, so no try-resources - manually close
             for (FieldData fieldData : table.getFieldData()) {
                 final Generator generator = fieldData.getGenerator();
                 DataType<?> dataType = DataTypeMapping.findByKey(generator.getDataTypeKey()).getDataType();
@@ -72,10 +71,11 @@ public class TargetConnectionDao {
                 dataType = dataType.precision((generator.getPrecision() > Short.MAX_VALUE) ? Short.MAX_VALUE : generator.getPrecision());
                 dataType = dataType.length((generator.getLength() > Short.MAX_VALUE) ? Short.MAX_VALUE : generator.getLength());
 
-                final Field<?> field = field(quotedName(fieldData.getFieldName()), dataType);
+                final Name fieldName = quotedName(fieldData.getFieldName());
+                final Field<?> field = field(fieldName, dataType);
                 createStep = createStep.column(field);
 
-                if (fieldData.isPrimaryKey()) primaryKeys.add(field(quotedName(fieldData.getFieldName())));
+                if (fieldData.isPrimaryKey()) primaryKeys.add(field(fieldName));
             }
             createStep.execute();
         } finally {
@@ -83,16 +83,15 @@ public class TargetConnectionDao {
         }
 
         if (!primaryKeys.isEmpty()) {
-            dsl.alterTable(table(quotedName(table.getTableName()))).add(constraint().primaryKey(primaryKeys.toArray(new Field<?>[0]))).execute();
+            dsl.alterTable(tableRef).add(constraint().primaryKey(primaryKeys.toArray(new Field<?>[0]))).execute();
         }
 
-        table.getFieldData().forEach(fieldData ->
-            fieldData.getForeignKeyData().forEach(fk ->
-                dsl.alterTable(table(quotedName(table.getTableName())))
-                        .add(foreignKey(field(quotedName(fieldData.getFieldName()))).references(quotedName(fk.getTable()), quotedName(fk.getKey())))
-                        .execute()
-            )
-        );
+        table.getFieldData().forEach(fieldData -> {
+            final ForeignKeyData fk = fieldData.getForeignKeyData();
+            dsl.alterTable(tableRef)
+                    .add(foreignKey(field(quotedName(fieldData.getFieldName()))).references(quotedName(fk.getTable()), quotedName(fk.getKey())))
+                    .execute();
+        });
     }
 
     public void validateTable(DSLContext dsl, TableData table) {
@@ -100,7 +99,7 @@ public class TargetConnectionDao {
     }
 
     public void pushData(DSLContext dsl, TableData table) {
-        List<Field<?>> fields = table.getFieldData().stream().map(f -> field(quotedName(f.getFieldName()))).collect(Collectors.toCollection(LinkedList::new));
+        List<Field<?>> fields = new ArrayList<>();
 
         final long total = table.getTotalCount();
 
@@ -109,23 +108,24 @@ public class TargetConnectionDao {
 
         Map<String, Map<Double, ValueDistribution.MutableInt>> percentagesHandled = new HashMap<>();
 
+        prefetchFKValues(dsl, table);
+
         try (ProgressBar pb = new ProgressBar("Generating data for " + table.getTableName(), total)) {
             for (long i = 0; i < total; i++) {
                 List<Object> data = new LinkedList<>();
-
                 for (FieldData field : table.getFieldData()) {
                     final String fieldName = field.getFieldName();
+
                     Long skipListValue = skipList.get(fieldName);
-                    if (skipListValue == null || field.isPrimaryKey()) {
+                    if (skipListValue == null || (field.isPrimaryKey() && field.getForeignKeyData() == null)) {
                         Double percentage = determineActivePercentage(percentagesHandled, field);
 
                         long skipTo = calculateSkipTo(total, i, percentage);
-
                         skipList.put(fieldName, skipTo);
                         Object gen;
 
                         do {
-                            gen = generateNewDataField(dsl, field);
+                            gen = generateNewDataField(field);
                         } while (skipListData.containsValue(gen));
 
                         skipListData.put(fieldName, gen);
@@ -145,15 +145,27 @@ public class TargetConnectionDao {
                             .values(data)
                             .execute();
                 } catch (DataAccessException e) {
-                    if(e.getMessage().contains("duplicate") || e.getMessage().contains(" violates foreign key")) {
+                    /*if (e.getMessage().contains("duplicate") || e.getMessage().contains(" violates foreign key")) {
                         //System.err.println(e.getMessage() + " for table: " + table.getTableName());
                         pb.step();
                         continue;
-                    }
+                    }*/
 
                     throw e;
                 }
                 pb.step();
+            }
+        }
+    }
+
+    private void prefetchFKValues(DSLContext dsl, TableData table) {
+        for (FieldData field : table.getFieldData()) {
+            if (field.getForeignKeyData() != null) {
+                ForeignKeyData fk = field.getForeignKeyData();
+                final Name tableName = quotedName(fk.getTable());
+                final Name fieldName = quotedName(fk.getKey());
+                final List<Object> results = dsl.selectDistinct().from(table(tableName)).fetch(field(fieldName), Object.class);
+                field.getForeignKeyData().setPossibleValues(results);
             }
         }
     }
@@ -186,22 +198,16 @@ public class TargetConnectionDao {
         return percentage;
     }
 
-    private Object generateNewDataField(DSLContext dsl, FieldData field) {
-        if(field.getForeignKeyData().isEmpty()) {
-            final Generator g = field.getGenerator();
-            return generationService.generate(g.getOriginalType(), g.getLength(), field);
-        } else {
-            ForeignKeyData fk = field.getForeignKeyData().get(0); //TODO not sure how multiple FKS works
-
-            final Record1<Object> results = dsl.select(field(quotedName(fk.getKey()))).from(table(quotedName(fk.getTable()))).where().limit(1).offset(field.getOffset()).fetchOne();
-            if (results == null) {
-                final Generator g = field.getGenerator();
-                return generationService.generate(g.getOriginalType(), g.getLength(), field);
-            }
-            final Object result = results.component1();
-
+    private Object generateNewDataField(FieldData field) {
+        final ForeignKeyData fk = field.getForeignKeyData();
+        if(null != fk) {
+            if(fk.getPossibleValues().size() <= field.getOffset()) return null;
+            final Object result = fk.getPossibleValues().get(field.getOffset());
             field.setOffset(field.getOffset()+1);
             return result;
+        } else {
+            final Generator g = field.getGenerator();
+            return generationService.generate(g.getOriginalType(), g.getLength(), field);
         }
     }
 }

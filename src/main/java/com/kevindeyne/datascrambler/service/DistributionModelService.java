@@ -45,8 +45,8 @@ public class DistributionModelService {
                         tableData.setTotalCount(sourceConnectionDao.count(tableData.getTableName(), dsl));
                         tableData.setOrderOfExecution(orderOfExecutionList.indexOf(tableData.getTableName()));
                         List<String> primaryKeys = new ArrayList<>();
-                        for(UniqueKey<?> key : table.getKeys()) {
-                            if(key.isPrimary()) {
+                        for (UniqueKey<?> key : table.getKeys()) {
+                            if (key.isPrimary()) {
                                 for (TableField field : key.getFields()) {
                                     primaryKeys.add(field.getName());
                                 }
@@ -62,11 +62,11 @@ public class DistributionModelService {
                             }
                             fieldData.setValueDistribution(sourceConnectionDao.determineDistribution(table, f, tableData.getTotalCount(), dsl));
 
-                            if(primaryKeys.contains(f.getName())) fieldData.setPrimaryKey(true);
+                            if (primaryKeys.contains(f.getName())) fieldData.setPrimaryKey(true);
 
                             table.getReferences().stream().filter(fk -> fk.getFields().get(0).getName().equals(f.getName())).forEach(fk ->
-                                     fk.getKey().getFields().forEach(k ->
-                                            fieldData.getForeignKeyData().add(new ForeignKeyData(fk.getKey().getTable().getName(), k.getName())))
+                                    fk.getKey().getFields().forEach(k ->
+                                            fieldData.setForeignKeyData((new ForeignKeyData(fk.getKey().getTable().getName(), k.getName()))))
                             );
 
                             tableData.getFieldData().add(fieldData);
@@ -105,12 +105,12 @@ public class DistributionModelService {
         LinkedList<String> orderOfExecutionList = new LinkedList<>();
         for (Table<?> allTable : allTables) orderOfExecutionList.add(allTable.getName());
         allTables.forEach(table -> {
-            for(ForeignKey<?, ?> fk : table.getReferences()) {
+            for (ForeignKey<?, ?> fk : table.getReferences()) {
                 final String foreignTable = fk.getKey().getTable().getName();
                 final String currentTable = table.getName();
 
                 //foreign needs to be BEFORE currentTable
-                if(orderOfExecutionList.indexOf(foreignTable) > orderOfExecutionList.indexOf(currentTable)){
+                if (orderOfExecutionList.indexOf(foreignTable) > orderOfExecutionList.indexOf(currentTable)) {
                     //remove foreign key from list
                     orderOfExecutionList.remove(foreignTable);
                     //re-add in correct position (before current table)
