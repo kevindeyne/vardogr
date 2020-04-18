@@ -215,7 +215,10 @@ public class TargetConnectionDao {
     private Object generateNewDataField(FieldData field) {
         final ForeignKeyData fk = field.getForeignKeyData();
         if(null != fk) {
-            if(fk.getPossibleValues().size() <= field.getOffset()) return null;
+            if(fk.getPossibleValues().size() <= field.getOffset()) {
+                field.setOffset(0);
+                return generateNewDataField(field);
+            }
             final Object result = fk.getPossibleValues().toArray()[field.getOffset()];
             field.setOffset(field.getOffset()+1);
             return result;
