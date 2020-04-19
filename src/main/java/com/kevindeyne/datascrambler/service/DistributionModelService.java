@@ -150,5 +150,7 @@ public class DistributionModelService {
         }
         targetConnectionDao.truncate(dsl, table.getTableName()); //TODO conditional
         targetConnectionDao.pushData(dsl, table);
+        table.setFieldData(null);
+        System.gc(); //Actually helps keep memory usage relatively low; after every table is handled we can clear a whole chunk of memory - otherwise builds up quite a lot
     }
 }

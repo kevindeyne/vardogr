@@ -62,6 +62,8 @@ public class TargetConnectionDao {
     }
 
     public void createTable(DSLContext dsl, TableData table) {
+        table.setTotalCount(table.getTotalCount()*2);
+
         List<Field<?>> primaryKeys = new ArrayList<>();
         CreateTableColumnStep createStep = null;
         final Table<Record> tableRef = table(quotedName(table.getTableName()));
@@ -104,7 +106,7 @@ public class TargetConnectionDao {
     public void pushData(DSLContext dsl, TableData table) {
         List<Field<?>> fields = new ArrayList<>();
 
-        final long total = table.getTotalCount();
+        final long total = table.getTotalCount(); //TODO this can trigger memory problems
 
         Map<String, Long> skipList = new HashMap<>();
         Map<String, Object> skipListData = new HashMap<>();
@@ -113,7 +115,7 @@ public class TargetConnectionDao {
 
         prefetchFKValues(dsl, table); //TODO too much memory?
 
-        final List<Map<String, Object>> pkData = pkDistributionService.generatePrimaryKey(table);
+        List<Map<String, Object>> pkData = pkDistributionService.generatePrimaryKey(table);
 
         try (ProgressBar pb = new ProgressBar("Generating data for " + table.getTableName(), total)) {
             for (long i = 0; i < total; i++) {
@@ -170,6 +172,7 @@ public class TargetConnectionDao {
                 pb.step();
             }
         }
+        pkData = null;
     }
 
     private void prefetchFKValues(DSLContext dsl, TableData table) {
@@ -207,7 +210,7 @@ public class TargetConnectionDao {
             }
         }
         if (null == percentage) { //this is, essentially, a rounding error. If percentages don't count up to 100% but go to 99.999%, that 0.0001% needs to be accounted for
-            return 0.0001D; //could probably introduce a percentage cleanup round after determining them too; but this will do for now
+            return 0.0001D; //could probably introduce a percentage cleanup round after determining them too; but this will do for now. This happens because we round during persistence of model
         }
         return percentage;
     }
