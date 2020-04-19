@@ -1,5 +1,6 @@
 package com.kevindeyne.datascrambler.service;
 
+import com.google.common.collect.Sets;
 import com.kevindeyne.datascrambler.domain.distributionmodel.FieldData;
 import com.kevindeyne.datascrambler.domain.distributionmodel.TableData;
 import org.springframework.stereotype.Service;
@@ -25,14 +26,15 @@ public class PKDistributionService {
         final List<FieldData> lists = fieldData.stream().filter(FieldData::isPrimaryKey).collect(Collectors.toList());
         Set<?>[] array = new Set<?>[lists.size()];
         String[] fieldMapping = new String[lists.size()];
+
         for (int i = 0; i < lists.size(); i++) {
             array[i] = lists.get(i).getForeignKeyData().getPossibleValues();
-            fieldMapping[i] = lists.get(lists.size() - i - 1).getFieldName();
+            fieldMapping[i] = lists.get(i).getFieldName();
         }
 
-        Set<Set<Object>> sets = cartesianProduct(0, array);
+        Set<List<Object>> sets = Sets.cartesianProduct(array);
         sets = sets.stream().filter(s-> s.size() == lists.size()).limit(size).collect(Collectors.toSet());
-        for (Set<Object> set : sets) {
+        for (List<Object> set : sets) {
             int index = 0;
             Map<String, Object> key = new HashMap<>();
             for (Object obj : set) {
@@ -41,21 +43,5 @@ public class PKDistributionService {
             pks.add(key);
         }
         return pks;
-    }
-
-    private Set<Set<Object>> cartesianProduct(int index, Set<?>... sets) {
-        Set<Set<Object>> ret = new LinkedHashSet<>();
-        if (index == sets.length) {
-            ret.add(new LinkedHashSet<>());
-        } else {
-            for (Object obj : sets[index]) {
-                int innerIndex = index + 1;
-                for (Set<Object> set : cartesianProduct(innerIndex, sets)) {
-                    set.add(obj);
-                    ret.add(set);
-                }
-            }
-        }
-        return ret;
     }
 }

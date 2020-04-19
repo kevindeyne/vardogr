@@ -5,6 +5,7 @@ import com.kevindeyne.datascrambler.domain.distributionmodel.ForeignKeyData;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -127,6 +128,42 @@ public class PKDistributionTest {
             Assert.assertTrue(isInteger(key.get("film_id").toString()));
             Assert.assertEquals(3, key.size());
         }
+    }
+
+    @Test
+    public void testDistributionComboPKAsFK_3fields_massive() {
+        List<FieldData> fieldData = new ArrayList<>();
+
+        Set<Object> fkList = new HashSet<>();
+        Set<Object> fk2List = new HashSet<>();
+        Set<Object> fk3List = new HashSet<>();
+
+        for (int i = 0; i < 123 + new SecureRandom().nextInt(99999); i++) fkList.add(i);
+        for (int i = 0; i < 234 + new SecureRandom().nextInt(99999); i++) fk2List.add(i);
+        for (int i = 0; i < 456 + new SecureRandom().nextInt(99999); i++) fk3List.add(i);
+
+        FieldData f2 = new FieldData("film_id");
+        f2.setPrimaryKey(true);
+        ForeignKeyData fkd2 = new ForeignKeyData();
+        fkd2.setPossibleValues(fkList);
+        f2.setForeignKeyData(fkd2);
+        fieldData.add(f2);
+
+        FieldData f1 = new FieldData("actor_id");
+        f1.setPrimaryKey(true);
+        ForeignKeyData fkd = new ForeignKeyData();
+        fkd.setPossibleValues(fk2List);
+        f1.setForeignKeyData(fkd);
+        fieldData.add(f1);
+
+        FieldData f3 = new FieldData("otherID");
+        f3.setPrimaryKey(true);
+        ForeignKeyData fkd3 = new ForeignKeyData();
+        fkd3.setPossibleValues(fk3List);
+        f3.setForeignKeyData(fkd3);
+        fieldData.add(f3);
+
+        final List<Map<String, Object>> pks = service.generatePrimaryKey(fieldData, 100000);
     }
 
     public boolean isInteger(String s) {
