@@ -24,6 +24,7 @@ public class PKDistributionService {
     List<Map<String, Object>> generatePrimaryKey(List<FieldData> fieldData, long size) {
         List<Map<String, Object>> pks = new ArrayList<>();
         final List<FieldData> lists = fieldData.stream().filter(FieldData::isPrimaryKey).collect(Collectors.toList());
+
         Set<?>[] array = new Set<?>[lists.size()];
         String[] fieldMapping = new String[lists.size()];
 

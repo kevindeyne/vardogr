@@ -21,6 +21,9 @@ public class TableData {
     @SerializedName(value = "o")
     private Integer orderOfExecution; //lower is earlier
 
+    @SerializedName(value = "i")
+    private List<IndexData> indexData = new ArrayList<>();
+
     public TableData(String name) {
         this.tableName = name;
     }

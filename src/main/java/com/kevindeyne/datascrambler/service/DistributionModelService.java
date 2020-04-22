@@ -15,6 +15,7 @@ import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 import static org.jooq.impl.DSL.using;
 
@@ -39,45 +40,57 @@ public class DistributionModelService {
 
             try (ProgressBar pb = new ProgressBar("Building model", calculateTotalFieldsForModel(allTables))) {
                 threadPool = Executors.newFixedThreadPool(10);
-                allTables.forEach(table -> threadPool.execute(() -> {
-                    try (DSLContext dsl = using(configuration.derive(dataSource))) {
-                        TableData tableData = new TableData(table.getName());
-                        tableData.setTotalCount(sourceConnectionDao.count(tableData.getTableName(), dsl));
-                        tableData.setOrderOfExecution(orderOfExecutionList.indexOf(tableData.getTableName()));
-                        List<String> primaryKeys = new ArrayList<>();
-                        for (UniqueKey<?> key : table.getKeys()) {
-                            if (key.isPrimary()) {
-                                for (TableField field : key.getFields()) {
-                                    primaryKeys.add(field.getName());
+                allTables.forEach(table -> {
+                    threadPool.execute(() -> {
+                        try (DSLContext dsl = using(configuration.derive(dataSource))) {
+                            TableData tableData = new TableData(table.getName());
+                            tableData.setTotalCount(sourceConnectionDao.count(tableData.getTableName(), dsl));
+                            tableData.setOrderOfExecution(orderOfExecutionList.indexOf(tableData.getTableName()));
+                            List<String> primaryKeys = new ArrayList<>();
+                            for (UniqueKey<?> key : table.getKeys()) {
+                                if (key.isPrimary()) {
+                                    for (TableField field : key.getFields()) {
+                                        primaryKeys.add(field.getName());
+                                    }
                                 }
                             }
-                        }
 
-                        Arrays.stream(table.fields()).forEach(f -> {
-                            FieldData fieldData = new FieldData(f.getName());
-                            try {
-                                fieldData.setGenerator(determineGenerator(f));
-                            } catch (IllegalArgumentException e) {
-                                fieldData.setGenerator(sourceConnectionDao.manualDetermineGenerator(dsl, tableData.getTableName(), f.getName()));
+                            Arrays.stream(table.fields()).forEach(f -> {
+                                FieldData fieldData = new FieldData(f.getName());
+                                try {
+                                    fieldData.setGenerator(determineGenerator(f));
+                                } catch (IllegalArgumentException e) {
+                                    fieldData.setGenerator(sourceConnectionDao.manualDetermineGenerator(dsl, tableData.getTableName(), f.getName()));
+                                }
+                                fieldData.setValueDistribution(sourceConnectionDao.determineDistribution(table, f, tableData.getTotalCount(), dsl));
+
+                                if (primaryKeys.contains(f.getName())) fieldData.setPrimaryKey(true);
+
+                                table.getReferences().stream().filter(fk -> fk.getFields().get(0).getName().equals(f.getName())).forEach(fk ->
+                                        fk.getKey().getFields().forEach(k ->
+                                                fieldData.setForeignKeyData((new ForeignKeyData(fk.getKey().getTable().getName(), k.getName()))))
+                                );
+
+                                tableData.getFieldData().add(fieldData);
+                                pb.step();
+                            });
+
+                            for (Index index : table.getIndexes()) {
+                                if(notPKOrFK(index, primaryKeys, table.getReferences())) {
+                                    IndexData indexData = new IndexData();
+                                    indexData.setName(index.getName());
+                                    indexData.setUnique(index.getUnique());
+                                    index.getFields().forEach(f -> indexData.getFields().add(f.getName()));
+                                    tableData.getIndexData().add(indexData);
+                                }
                             }
-                            fieldData.setValueDistribution(sourceConnectionDao.determineDistribution(table, f, tableData.getTotalCount(), dsl));
 
-                            if (primaryKeys.contains(f.getName())) fieldData.setPrimaryKey(true);
-
-                            table.getReferences().stream().filter(fk -> fk.getFields().get(0).getName().equals(f.getName())).forEach(fk ->
-                                    fk.getKey().getFields().forEach(k ->
-                                            fieldData.setForeignKeyData((new ForeignKeyData(fk.getKey().getTable().getName(), k.getName()))))
-                            );
-
-                            tableData.getFieldData().add(fieldData);
-                            pb.step();
-                        });
-
-                        model.getTables().add(tableData);
-                    } finally {
-                        latch.countDown();
-                    }
-                }));
+                            model.getTables().add(tableData);
+                        } finally {
+                            latch.countDown();
+                        }
+                    });
+                });
                 latch.await();
             }
             return model;
@@ -87,6 +100,27 @@ public class DistributionModelService {
             threadPool.shutdown();
             dataSource.close();
         }
+    }
+
+    private boolean notPKOrFK(Index index, List<String> primaryKeys, List<? extends ForeignKey<?, ?>> fks) {
+        List<String> indexFields = index.getFields().stream().map(SortField::getName).collect(Collectors.toList());
+        if(indexFields.size() == primaryKeys.size()) {
+            for(String pk : primaryKeys) {
+                if(indexFields.contains(pk)) {
+                    return false;
+                }
+            }
+        } else if(indexFields.size() == 1) {
+            boolean hasAnyFkMatch = false;
+            for(ForeignKey<?, ?> fk : fks) {
+                if(fk.getName().contains(indexFields.get(0))) {
+                    hasAnyFkMatch = true;
+                    break;
+                }
+            }
+            return !hasAnyFkMatch;
+        }
+        return true;
     }
 
     public <K, V extends Comparable<? super V>> Map<K, V> sortByValue(Map<K, V> map) {
@@ -150,6 +184,7 @@ public class DistributionModelService {
         }
         targetConnectionDao.truncate(dsl, table.getTableName()); //TODO conditional
         targetConnectionDao.pushData(dsl, table);
+        targetConnectionDao.createIndexes(dsl, table);
         table.setFieldData(null);
         System.gc(); //Actually helps keep memory usage relatively low; after every table is handled we can clear a whole chunk of memory - otherwise builds up quite a lot
     }

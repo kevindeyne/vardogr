@@ -103,6 +103,12 @@ public class TargetConnectionDao {
         //TODO
     }
 
+    public void createIndexes(DSLContext dsl, TableData table) {
+        table.getIndexData().parallelStream().forEach(i ->
+            dsl.createIndex(i.getName()).on(table.getTableName(), i.getFields()).execute()
+        );
+    }
+
     public void pushData(DSLContext dsl, TableData table) {
         List<Field<?>> fields = new ArrayList<>();
 
