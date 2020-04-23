@@ -1,6 +1,6 @@
 # bclone
-CLI that can clone production data to test environments without PII. No actual data is directly copied, instead a valueDistribution model is
-generate from the production data. Test data can then be generated in any other database along the same patterns as the model.
+Realistic test data in development and qa environments can pinpoint bugs and performance issues early. However taking direct copies violates the security of data and takes time. It also does not scale. 
 
-This also allows for projecting into the future. For example, you can test with how your production data would look like with 2x growth. 
-It can also simulate user activity by continuously projecting into the future.
+Bclone is a tool that can push production-like data to test databases securely. It does this by generating a distribution model of the data first - describing the data and its relative distribution. 
+
+It can then run this model and generate data from it, either directly matching the origin size or scaling up. 
