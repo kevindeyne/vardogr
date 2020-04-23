@@ -4,17 +4,18 @@ import com.devskiller.jfairy.Fairy;
 import com.kevindeyne.datascrambler.domain.distributionmodel.FieldData;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.sql.Date;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Service
 public class GenerationService {
@@ -30,18 +31,19 @@ public class GenerationService {
     }
 
     private static List<String> loadNameList() {
-        File file = new File(GenerationService.class.getClassLoader().getResource("names.all.txt").getFile());
-        try (Stream<String> stream = Files.lines(Paths.get(file.getPath()))) {
-            return stream.distinct().collect(Collectors.toList());
-        } catch (Exception e) {
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        try (InputStream resource = classloader.getResourceAsStream("names.all.txt")) {
+            return new BufferedReader(new InputStreamReader(resource, StandardCharsets.UTF_8)).lines().collect(Collectors.toList());
+        } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
     private static Map<String, String> loadCountryMap() {
-        File file = new File(GenerationService.class.getClassLoader().getResource("country.txt").getFile());
-        try (Stream<String> stream = Files.lines(Paths.get(file.getPath()))) {
-            return stream.map(s -> s.split(",")).collect(Collectors.toMap(a -> a[0].trim(), a -> a.length>1? a[1].trim(): ""));
+        ClassLoader classloader = Thread.currentThread().getContextClassLoader();
+        try (InputStream resource = classloader.getResourceAsStream("country.txt")) {
+            return new BufferedReader(new InputStreamReader(resource, StandardCharsets.UTF_8)).lines()
+                    .map(s -> s.split(",")).collect(Collectors.toMap(a -> a[0].trim(), a -> a.length>1? a[1].trim(): ""));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

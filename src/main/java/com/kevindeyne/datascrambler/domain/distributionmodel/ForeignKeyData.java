@@ -17,6 +17,8 @@ public class ForeignKeyData {
     private String key;
     @Expose(serialize = false)
     private Set<Object> possibleValues;
+    @Expose(serialize = false)
+    private Integer offset;
 
     public ForeignKeyData(String table, String key) {
         this.table = table;

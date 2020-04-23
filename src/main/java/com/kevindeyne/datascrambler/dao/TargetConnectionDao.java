@@ -17,6 +17,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.jooq.impl.DSL.*;
 
@@ -104,9 +105,12 @@ public class TargetConnectionDao {
     }
 
     public void createIndexes(DSLContext dsl, TableData table) {
-        table.getIndexData().parallelStream().forEach(i ->
-            dsl.createIndex(i.getName()).on(table.getTableName(), i.getFields()).execute()
-        );
+        List<String> alreadyCreated = dsl.meta().getIndexes().stream().map(Named::getName).collect(Collectors.toList());
+        table.getIndexData().parallelStream().forEach(i -> {
+                if(!alreadyCreated.contains(i.getName())){
+                    dsl.createIndex(i.getName()).on(table.getTableName(), i.getFields()).execute();
+                }
+        });
     }
 
     public void pushData(DSLContext dsl, TableData table) {
@@ -121,7 +125,7 @@ public class TargetConnectionDao {
 
         Map<String, Map<Double, ValueDistribution.MutableInt>> percentagesHandled = new HashMap<>();
 
-        prefetchFKValues(dsl, table); //TODO too much memory?
+        prefetchFKValues(dsl, table, 0);
 
         List<Map<String, Object>> pkData = pkDistributionService.generatePrimaryKey(table);
 
@@ -135,6 +139,7 @@ public class TargetConnectionDao {
                             final Object pkId = pkData.get((int) i).get(fieldName);
                             data.add(pkId);
                         } else {
+                            checkPrefetch(dsl, table, field);
                             data.add(generateNewDataField(field));
                         }
                     } else {
@@ -147,6 +152,7 @@ public class TargetConnectionDao {
                             Object gen;
                             short maxLoop = 1000;
                             do {
+                                checkPrefetch(dsl, table, field);
                                 gen = generateNewDataField(field);
                                 if(maxLoop-- < 0) break;
                             } while (skipListData.containsValue(gen));
@@ -183,14 +189,24 @@ public class TargetConnectionDao {
         pkData = null;
     }
 
-    private void prefetchFKValues(DSLContext dsl, TableData table) {
+    private void checkPrefetch(DSLContext dsl, TableData table, FieldData field) {
+        if (exceedPrefetchedData(field)) prefetchFKValues(dsl, table, field.getForeignKeyData().getOffset() + 1000);
+    }
+
+    private boolean exceedPrefetchedData(FieldData field) {
+        if(field == null || field.getForeignKeyData() == null || field.getForeignKeyData().getPossibleValues() == null) return false;
+        return field.getForeignKeyData().getPossibleValues().size() <= field.getForeignKeyData().getOffset();
+    }
+
+    private void prefetchFKValues(DSLContext dsl, TableData table, int offset) {
         for (FieldData field : table.getFieldData()) {
             if (field.getForeignKeyData() != null) {
                 ForeignKeyData fk = field.getForeignKeyData();
                 final Name tableName = quotedName(fk.getTable());
                 final Name fieldName = quotedName(fk.getKey());
-                final Set<Object> results = dsl.selectDistinct().from(table(tableName)).fetchSet(field(fieldName), Object.class);
+                final Set<Object> results = dsl.selectDistinct().from(table(tableName)).offset(offset).limit(1000).fetchSet(field(fieldName), Object.class);
                 field.getForeignKeyData().setPossibleValues(results);
+                field.getForeignKeyData().setOffset(0);
             }
         }
     }
