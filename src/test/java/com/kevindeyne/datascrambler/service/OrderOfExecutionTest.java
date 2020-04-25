@@ -1,7 +1,5 @@
 package com.kevindeyne.datascrambler.service;
 
-import com.kevindeyne.datascrambler.dao.SourceConnectionDao;
-import com.zaxxer.hikari.HikariDataSource;
 import org.jooq.Comparator;
 import org.jooq.*;
 import org.jooq.exception.DataAccessException;
@@ -82,25 +80,6 @@ public class OrderOfExecutionTest {
         Assert.assertTrue(map.indexOf("address") < map.indexOf("person"));
         Assert.assertTrue(map.indexOf("person") < map.indexOf("book"));
         Assert.assertTrue(map.indexOf("book") < map.indexOf("library"));
-    }
-
-    @Test
-    public void testOrderOfExecutionComplexReal() {
-        SourceConnectionDao sourceConnectionDao = new SourceConnectionDao("jdbc:postgresql://localhost:5432/adventureworks","postgres", "passw0rd", SQLDialect.POSTGRES);
-        HikariDataSource dataSource = null;
-        try {
-            dataSource = sourceConnectionDao.toDataSource();
-            List<Table<?>> tables = sourceConnectionDao.getAllTables(dataSource, "public");
-
-            List<String> map = service.determineOrderOfExecution(tables);
-            Assert.assertNotNull(map);
-            Assert.assertEquals(map.size(), tables.size());
-
-            Assert.assertTrue(map.indexOf("city") < map.indexOf("address"));
-
-        } finally {
-            dataSource.close();
-        }
     }
 
     @Test
