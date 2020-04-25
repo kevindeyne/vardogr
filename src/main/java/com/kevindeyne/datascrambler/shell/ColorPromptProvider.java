@@ -6,10 +6,10 @@ import org.springframework.shell.jline.PromptProvider;
 import org.springframework.stereotype.Component;
 
 @Component
-public class ClidemoPromptProvider implements PromptProvider {
+public class ColorPromptProvider implements PromptProvider {
 
     @Override
     public AttributedString getPrompt() {
-        return new AttributedString("BCLONE:>", AttributedStyle.DEFAULT.foreground(AttributedStyle.BLUE));
+        return new AttributedString("BCLONE:>", AttributedStyle.DEFAULT.foreground(AttributedStyle.CYAN));
     }
 }
