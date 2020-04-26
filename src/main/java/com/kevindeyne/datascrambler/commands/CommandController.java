@@ -7,12 +7,12 @@ import com.kevindeyne.datascrambler.domain.distributionmodel.DistributionModel;
 import com.kevindeyne.datascrambler.domain.distributionmodel.TableData;
 import com.kevindeyne.datascrambler.exceptions.ConfigFileException;
 import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
+import com.kevindeyne.datascrambler.helper.DSLConfiguration;
 import com.kevindeyne.datascrambler.helper.PrintCmds;
 import com.kevindeyne.datascrambler.service.*;
 import com.zaxxer.hikari.HikariDataSource;
 import org.jooq.DSLContext;
 import org.jooq.Named;
-import org.jooq.impl.DefaultConfiguration;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 
@@ -91,7 +91,7 @@ public class CommandController {
 
             model.getTables().sort(Comparator.comparing(TableData::getOrderOfExecution));
 
-            try (DSLContext dsl = using(new DefaultConfiguration().derive(dataSource))) {
+            try (DSLContext dsl = using(new DSLConfiguration(dataSource, config.getDbTypeTarget()).getDbConfiguration())) {
                 for (TableData table : model.getTables()) {
                     boolean tableExists = existingTableNames.contains(table.getTableName());
                     distributionModelService.apply(dsl, targetConnectionDao, table, tableExists);

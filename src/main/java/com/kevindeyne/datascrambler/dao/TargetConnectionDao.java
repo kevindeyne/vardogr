@@ -59,7 +59,12 @@ public class TargetConnectionDao {
     }
 
     public void truncate(DSLContext dsl, String tableName) {
-        dsl.truncate(DSL.table(tableName)).cascade().execute();
+        try {
+            dsl.truncate(DSL.table(tableName)).cascade().execute();
+        } catch (Throwable e) {
+            //TODO see https://github.com/jOOQ/jOOQ/issues/7367 ; not yet supported
+            dsl.truncate(DSL.table(tableName)).execute();
+        }
     }
 
     public void createTable(DSLContext dsl, TableData table) {

@@ -4,11 +4,11 @@ import com.kevindeyne.datascrambler.dao.SourceConnectionDao;
 import com.kevindeyne.datascrambler.dao.TargetConnectionDao;
 import com.kevindeyne.datascrambler.domain.distributionmodel.*;
 import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
+import com.kevindeyne.datascrambler.helper.DSLConfiguration;
 import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.zaxxer.hikari.HikariDataSource;
 import me.tongfei.progressbar.ProgressBar;
 import org.jooq.*;
-import org.jooq.impl.DefaultConfiguration;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -32,88 +32,82 @@ public class DistributionModelService {
             List<Table<?>> allTables = sourceConnectionDao.getAllTables(dataSource, schema);
             CountDownLatch latch = new CountDownLatch(allTables.size());
 
-            final DefaultConfiguration configuration = new DefaultConfiguration();
-            configuration.setSQLDialect(sourceConnectionDao.getSqlDialect());
-            configuration.setSettings(configuration.settings().withParseDialect(sourceConnectionDao.getSqlDialect()));
-
             final List<String> orderOfExecutionList = determineOrderOfExecution(allTables);
 
             try (ProgressBar pb = new ProgressBar("Building model", calculateTotalFieldsForModel(allTables))) {
                 threadPool = Executors.newFixedThreadPool(10);
-                allTables.forEach(table -> {
-                    threadPool.execute(() -> {
-                        try (DSLContext dsl = using(configuration.derive(dataSource))) {
-                            TableData tableData = new TableData(table.getName());
-                            tableData.setTotalCount(sourceConnectionDao.count(tableData.getTableName(), dsl));
-                            tableData.setOrderOfExecution(orderOfExecutionList.indexOf(tableData.getTableName()));
-                            List<String> primaryKeys = new ArrayList<>();
-                            for (UniqueKey<?> key : table.getKeys()) {
-                                if (key.isPrimary()) {
-                                    for (TableField field : key.getFields()) {
-                                        primaryKeys.add(field.getName());
-                                    }
+                allTables.forEach(table -> threadPool.execute(() -> {
+                    try (DSLContext dsl = using(new DSLConfiguration(dataSource, sourceConnectionDao.getSqlDialect()).getDbConfiguration())) {
+                        TableData tableData = new TableData(table.getName());
+                        tableData.setTotalCount(sourceConnectionDao.count(tableData.getTableName(), dsl));
+                        tableData.setOrderOfExecution(orderOfExecutionList.indexOf(tableData.getTableName()));
+                        List<String> primaryKeys = new ArrayList<>();
+                        for (UniqueKey<?> key : table.getKeys()) {
+                            if (key.isPrimary()) {
+                                for (TableField field : key.getFields()) {
+                                    primaryKeys.add(field.getName());
                                 }
                             }
-
-                            Arrays.stream(table.fields()).forEach(f -> {
-                                FieldData fieldData = new FieldData(f.getName());
-                                try {
-                                    fieldData.setGenerator(determineGenerator(f));
-                                } catch (IllegalArgumentException e) {
-                                    fieldData.setGenerator(sourceConnectionDao.manualDetermineGenerator(dsl, tableData.getTableName(), f.getName()));
-                                }
-                                fieldData.setValueDistribution(sourceConnectionDao.determineDistribution(table, f, tableData.getTotalCount(), dsl));
-
-                                if (primaryKeys.contains(f.getName())) fieldData.setPrimaryKey(true);
-
-                                table.getReferences().stream().filter(fk -> fk.getFields().get(0).getName().equals(f.getName())).forEach(fk ->
-                                        fk.getKey().getFields().forEach(k ->
-                                                fieldData.setForeignKeyData((new ForeignKeyData(fk.getKey().getTable().getName(), k.getName()))))
-                                );
-
-                                tableData.getFieldData().add(fieldData);
-                                pb.step();
-                            });
-
-                            for (Index index : table.getIndexes()) {
-                                if(notPKOrFK(index, primaryKeys, table.getReferences())) {
-                                    IndexData indexData = new IndexData();
-                                    indexData.setName(index.getName());
-                                    indexData.setUnique(index.getUnique());
-                                    index.getFields().forEach(f -> indexData.getFields().add(f.getName()));
-                                    tableData.getIndexData().add(indexData);
-                                }
-                            }
-
-                            model.getTables().add(tableData);
-                        } finally {
-                            latch.countDown();
                         }
-                    });
-                });
+
+                        Arrays.stream(table.fields()).forEach(f -> {
+                            FieldData fieldData = new FieldData(f.getName());
+                            try {
+                                fieldData.setGenerator(determineGenerator(f));
+                            } catch (IllegalArgumentException e) {
+                                fieldData.setGenerator(sourceConnectionDao.manualDetermineGenerator(dsl, tableData.getTableName(), f.getName()));
+                            }
+                            fieldData.setValueDistribution(sourceConnectionDao.determineDistribution(table, f, tableData.getTotalCount(), dsl));
+
+                            if (primaryKeys.contains(f.getName())) fieldData.setPrimaryKey(true);
+
+                            table.getReferences().stream().filter(fk -> fk.getFields().get(0).getName().equals(f.getName())).forEach(fk ->
+                                    fk.getKey().getFields().forEach(k ->
+                                            fieldData.setForeignKeyData((new ForeignKeyData(fk.getKey().getTable().getName(), k.getName()))))
+                            );
+
+                            tableData.getFieldData().add(fieldData);
+                            pb.step();
+                        });
+
+                        for (Index index : table.getIndexes()) {
+                            if (notPKOrFK(index, primaryKeys, table.getReferences())) {
+                                IndexData indexData = new IndexData();
+                                indexData.setName(index.getName());
+                                indexData.setUnique(index.getUnique());
+                                index.getFields().forEach(f -> indexData.getFields().add(f.getName()));
+                                tableData.getIndexData().add(indexData);
+                            }
+                        }
+
+                        model.getTables().add(tableData);
+                    } finally {
+                        latch.countDown();
+                    }
+                }));
                 latch.await();
             }
             return model;
         } catch (Exception e) {
             throw new ModelCreationException("Failure while setting up distribution model", e);
         } finally {
-            threadPool.shutdown();
-            dataSource.close();
+            if (null != threadPool) threadPool.shutdown();
+            if (null != dataSource) dataSource.close();
         }
     }
 
     private boolean notPKOrFK(Index index, List<String> primaryKeys, List<? extends ForeignKey<?, ?>> fks) {
         List<String> indexFields = index.getFields().stream().map(SortField::getName).collect(Collectors.toList());
-        if(indexFields.size() == primaryKeys.size()) {
-            for(String pk : primaryKeys) {
-                if(indexFields.contains(pk)) {
+        if (indexFields.size() == primaryKeys.size()) {
+            for (String pk : primaryKeys) {
+                if (indexFields.contains(pk)) {
                     return false;
                 }
             }
-        } else if(indexFields.size() == 1) {
+        } else if (indexFields.size() == 1) {
             boolean hasAnyFkMatch = false;
-            for(ForeignKey<?, ?> fk : fks) {
-                if(fk.getName().contains(indexFields.get(0))) {
+            for (ForeignKey<?, ?> fk : fks) {
+                if (fk.getName().contains(indexFields.get(0))) {
                     hasAnyFkMatch = true;
                     break;
                 }

@@ -8,7 +8,6 @@ import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 import org.jooq.*;
 import org.jooq.conf.ParamType;
-import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;
 import org.jooq.impl.SQLDataType;
@@ -51,7 +50,12 @@ public class SourceConnectionDao {
             final Optional<Schema> optionalSchema = dsl.meta().getSchemas().stream()
                     .filter(s -> s.getName().equals(schemaName))
                     .findFirst();
-            if(!optionalSchema.isPresent()) throw new RuntimeException("Schema '" + schemaName + "' is invalid.");
+            if(!optionalSchema.isPresent()) {
+                Optional<Schema> suggestion = dsl.meta().getSchemas().stream().filter(s -> s.getName().startsWith(schemaName.substring(0, 1))).findFirst();
+                if(!suggestion.isPresent()) suggestion = dsl.meta().getSchemas().stream().findFirst();
+                if(suggestion.isPresent()) throw new RuntimeException("Schema '" + schemaName + "' is invalid. Did you mean: '" + suggestion.get().getName() + "'?");
+                throw new RuntimeException("Schema '" + schemaName + "' is invalid. No schemas found.");
+            }
             final List<Table<?>> tables = dsl.meta(optionalSchema.get()).getTables();
             return tables.stream()
                     .filter(t -> TableOptions.TableType.TABLE.equals(t.getOptions().type()) && t.fields().length > 0)
