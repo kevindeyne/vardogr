@@ -7,6 +7,7 @@ import com.kevindeyne.datascrambler.domain.distributionmodel.DistributionModel;
 import com.kevindeyne.datascrambler.domain.distributionmodel.TableData;
 import com.kevindeyne.datascrambler.exceptions.ConfigFileException;
 import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
+import com.kevindeyne.datascrambler.helper.ApplyContext;
 import com.kevindeyne.datascrambler.helper.DSLConfiguration;
 import com.kevindeyne.datascrambler.helper.PrintCmds;
 import com.kevindeyne.datascrambler.service.*;
@@ -15,8 +16,10 @@ import org.jooq.DSLContext;
 import org.jooq.Named;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
+import org.springframework.shell.standard.ShellOption;
 
 import javax.annotation.PostConstruct;
+import javax.validation.constraints.Positive;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -76,25 +79,29 @@ public class CommandController {
     }
 
     @ShellMethod("Generates data based on the model")
-    public String generate() {
+    public String generate(@ShellOption(defaultValue="1") @Positive int factor) {
         if(!fileService.doesFileExist(DISTRIBUTION_MODEL_JSON, MSG_DIST_FOUND, MSG_DIST_NOT_FOUND)) return MSG_DIST_REQUIRED;
+
         HikariDataSource dataSource = null;
-        final TargetConnectionDao targetConnectionDao;
+        ApplyContext context = new ApplyContext(factor);
+
         try {
             Config config = configService.loadTargetConfig();
-            targetConnectionDao = config.setupTargetConnection(generationService, pkDistributionService);
+            final TargetConnectionDao dao = config.setupTargetConnection(generationService, pkDistributionService);
 
             DistributionModel model = fileService.loadModel(DISTRIBUTION_MODEL_JSON);
 
-            dataSource = targetConnectionDao.toDataSource();
-            List<String> existingTableNames = targetConnectionDao.getAllTables(dataSource).stream().map(Named::getName).collect(Collectors.toList());
+            dataSource = dao.toDataSource();
+            List<String> existingTableNames = dao.getAllTables(dataSource).stream().map(Named::getName).collect(Collectors.toList());
 
             model.getTables().sort(Comparator.comparing(TableData::getOrderOfExecution));
+            context.setTargetConnectionDao(dao);
 
             try (DSLContext dsl = using(new DSLConfiguration(dataSource, config.getDbTypeTarget()).getDbConfiguration())) {
+                context.setDsl(dsl);
+
                 for (TableData table : model.getTables()) {
-                    boolean tableExists = existingTableNames.contains(table.getTableName());
-                    distributionModelService.apply(dsl, targetConnectionDao, table, tableExists);
+                    distributionModelService.apply(context.withTable(table, existingTableNames.contains(table.getTableName())));
                 }
             }
 

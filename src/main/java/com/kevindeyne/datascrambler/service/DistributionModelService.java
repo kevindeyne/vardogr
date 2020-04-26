@@ -4,6 +4,7 @@ import com.kevindeyne.datascrambler.dao.SourceConnectionDao;
 import com.kevindeyne.datascrambler.dao.TargetConnectionDao;
 import com.kevindeyne.datascrambler.domain.distributionmodel.*;
 import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
+import com.kevindeyne.datascrambler.helper.ApplyContext;
 import com.kevindeyne.datascrambler.helper.DSLConfiguration;
 import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.zaxxer.hikari.HikariDataSource;
@@ -170,15 +171,19 @@ public class DistributionModelService {
         }
     }
 
-    public void apply(DSLContext dsl, TargetConnectionDao targetConnectionDao, TableData table, boolean tableExists) {
-        if (!tableExists) {
-            targetConnectionDao.createTable(dsl, table);
+    public void apply(ApplyContext context) {
+        final DSLContext dsl = context.getDsl();
+        final TableData table = context.getTable();
+        final TargetConnectionDao dao = context.getTargetConnectionDao();
+
+        if (!context.isTableExists()) {
+            dao.createTable(dsl, table);
         } else {
-            targetConnectionDao.validateTable(dsl, table);
+            dao.validateTable(dsl, table);
         }
-        targetConnectionDao.truncate(dsl, table.getTableName()); //TODO conditional
-        targetConnectionDao.pushData(dsl, table);
-        targetConnectionDao.createIndexes(dsl, table);
+        dao.truncate(dsl, table.getTableName()); //TODO conditional
+        dao.pushData(dsl, table);
+        dao.createIndexes(dsl, table);
         table.setFieldData(null);
         System.gc(); //Actually helps keep memory usage relatively low; after every table is handled we can clear a whole chunk of memory - otherwise builds up quite a lot
     }

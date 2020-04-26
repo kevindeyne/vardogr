@@ -121,8 +121,6 @@ public class TargetConnectionDao {
     public void pushData(DSLContext dsl, TableData table) {
         List<Field<?>> fields = new ArrayList<>();
 
-        //table.setTotalCount(table.getTotalCount()*10);
-
         final long total = table.getTotalCount();
 
         Map<String, Long> skipList = new HashMap<>();
