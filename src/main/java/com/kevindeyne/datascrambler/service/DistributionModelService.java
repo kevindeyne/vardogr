@@ -57,26 +57,11 @@ public class DistributionModelService {
 
                         Arrays.stream(table.fields()).forEach(f -> {
                             FieldData fieldData = new FieldData(f.getName());
-                            try {
-                                fieldData.setGenerator(determineGenerator(f));
-                            } catch (IllegalArgumentException e) {
-                                fieldData.setGenerator(sourceConnectionDao.manualDetermineGenerator(dsl, tableData.getTableName(), f.getName()));
-                            }
-
-                            final String originalType = fieldData.getGenerator().getOriginalType();
-                            if(tableData.getTotalCount() > 1 && characteristicService.supported(originalType)) {
-                                fieldData.setCharacteristics(characteristicService.determineCharacteristics(dsl, tableData.getTableName(), f.getName(), originalType));
-                            }
-
+                            determineGenerator(sourceConnectionDao, dsl, tableData, f, fieldData);
+                            determineCharacteristics(dsl, tableData, f, fieldData);
                             fieldData.setValueDistribution(sourceConnectionDao.determineDistribution(table, f, tableData.getTotalCount(), dsl));
-
                             if (primaryKeys.contains(f.getName())) fieldData.setPrimaryKey(true);
-
-                            table.getReferences().stream().filter(fk -> fk.getFields().get(0).getName().equals(f.getName())).forEach(fk ->
-                                    fk.getKey().getFields().forEach(k ->
-                                            fieldData.setForeignKeyData((new ForeignKeyData(fk.getKey().getTable().getName(), k.getName()))))
-                            );
-
+                            determineFKData(table, f, fieldData);
                             tableData.getFieldData().add(fieldData);
                             pb.step();
                         });
@@ -104,6 +89,28 @@ public class DistributionModelService {
         } finally {
             if (null != threadPool) threadPool.shutdown();
             if (null != dataSource) dataSource.close();
+        }
+    }
+
+    private void determineFKData(Table<?> table, Field<?> f, FieldData fieldData) {
+        table.getReferences().stream().filter(fk -> fk.getFields().get(0).getName().equals(f.getName())).forEach(fk ->
+                fk.getKey().getFields().forEach(k ->
+                        fieldData.setForeignKeyData((new ForeignKeyData(fk.getKey().getTable().getName(), k.getName()))))
+        );
+    }
+
+    private void determineGenerator(SourceConnectionDao sourceConnectionDao, DSLContext dsl, TableData tableData, Field<?> f, FieldData fieldData) {
+        try {
+            fieldData.setGenerator(determineGenerator(f));
+        } catch (IllegalArgumentException e) {
+            fieldData.setGenerator(sourceConnectionDao.manualDetermineGenerator(dsl, tableData.getTableName(), f.getName()));
+        }
+    }
+
+    private void determineCharacteristics(DSLContext dsl, TableData tableData, Field<?> f, FieldData fieldData) {
+        final String type = fieldData.getGenerator().getOriginalType();
+        if(tableData.getTotalCount() > 1 && characteristicService.supported(type)) {
+            fieldData.setCharacteristics(characteristicService.determineCharacteristics(dsl, tableData.getTableName(), f.getName(), type));
         }
     }
 

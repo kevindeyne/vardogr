@@ -30,15 +30,15 @@ public class CharacteristicService {
         return characteristics;
     }
 
-    public List<String> determineCharacteristics(DSLContext dsl, String tableName, String fieldName, String originalType) {
+    public List<String> determineCharacteristics(DSLContext dsl, String tableName, String fieldName, String type) {
         final Record2<Object, Object> minMaxValues = getMinMaxValues(dsl, tableName, fieldName);
-        if (originalType.equals(Integer.class.getName()) || originalType.equals(Short.class.getName()) || originalType.equals(Long.class.getName())){
+        if (isNumerical(type)){
             return determineCharacteristics(Long.valueOf(minMaxValues.value1().toString()), Long.valueOf(minMaxValues.value2().toString()));
-        } else if (originalType.equals(Timestamp.class.getName())) {
+        } else if (Timestamp.class.getName().equals(type)) {
             Date dMin = new Date(((Timestamp) minMaxValues.value1()).getTime());
             Date dMax = new Date(((Timestamp) minMaxValues.value2()).getTime());
             return determineCharacteristics(dMin, dMax);
-        } else if (originalType.equals(Date.class.getName())) {
+        } else if (Date.class.getName().equals(type)) {
             return determineCharacteristics((Date) minMaxValues.value1(), (Date) minMaxValues.value2());
         }
         return null; //do not return an empty collection here, because that would translate to a [] in the model as opposed to being removed for being NULL
@@ -48,8 +48,12 @@ public class CharacteristicService {
         return dsl.select(max(field(quotedName(fieldName))), min(field(quotedName(fieldName)))).from(table(quotedName(tableName))).fetchAny();
     }
 
-    public boolean supported(String originalType) {
-        return originalType.equals(Integer.class.getName()) || originalType.equals(Short.class.getName()) || originalType.equals(Long.class.getName()) ||
-                originalType.equals(Timestamp.class.getName()) || originalType.equals(Date.class.getName());
+    public boolean supported(String type) {
+        return isNumerical(type) ||
+                Timestamp.class.getName().equals(type) || Date.class.getName().equals(type);
+    }
+
+    private boolean isNumerical(String type) {
+        return Integer.class.getName().equals(type) || Short.class.getName().equals(type) || Long.class.getName().equals(type);
     }
 }
