@@ -10,6 +10,7 @@ import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.zaxxer.hikari.HikariDataSource;
 import me.tongfei.progressbar.ProgressBar;
 import org.jooq.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -22,6 +23,9 @@ import static org.jooq.impl.DSL.using;
 
 @Service
 public class DistributionModelService {
+
+    @Autowired
+    private CharacteristicService characteristicService;
 
     private ExecutorService threadPool;
 
@@ -58,6 +62,12 @@ public class DistributionModelService {
                             } catch (IllegalArgumentException e) {
                                 fieldData.setGenerator(sourceConnectionDao.manualDetermineGenerator(dsl, tableData.getTableName(), f.getName()));
                             }
+
+                            final String originalType = fieldData.getGenerator().getOriginalType();
+                            if(tableData.getTotalCount() > 1 && characteristicService.supported(originalType)) {
+                                fieldData.setCharacteristics(characteristicService.determineCharacteristics(dsl, tableData.getTableName(), f.getName(), originalType));
+                            }
+
                             fieldData.setValueDistribution(sourceConnectionDao.determineDistribution(table, f, tableData.getTotalCount(), dsl));
 
                             if (primaryKeys.contains(f.getName())) fieldData.setPrimaryKey(true);

@@ -4,6 +4,8 @@ import com.google.gson.annotations.Expose;
 import com.google.gson.annotations.SerializedName;
 import lombok.Data;
 
+import java.util.List;
+
 @Data
 public class FieldData {
 
@@ -17,6 +19,8 @@ public class FieldData {
     private boolean primaryKey;
     @SerializedName(value = "f")
     private ForeignKeyData foreignKeyData;
+    @SerializedName(value = "c")
+    private List<String> characteristics;
     @Expose(serialize = false)
     private int offset = 0;
 
