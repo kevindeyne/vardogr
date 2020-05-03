@@ -6,3 +6,5 @@ Realistic test data in development and qa environments can pinpoint bugs and per
 Vardøgr is a tool that can push production-like data to test databases securely. It does this by generating a distribution model of the data first - describing the data and its relative distribution. 
 
 It can then run this model and generate data from it, either directly matching the origin size or scaling up. 
+
+<img src="./explain.png" alt="Image showcasing the description visually" width="730" height="432">
