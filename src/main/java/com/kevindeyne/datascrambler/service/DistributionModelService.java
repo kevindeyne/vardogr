@@ -46,21 +46,14 @@ public class DistributionModelService {
                         TableData tableData = new TableData(table.getName());
                         tableData.setTotalCount(sourceConnectionDao.count(tableData.getTableName(), dsl));
                         tableData.setOrderOfExecution(orderOfExecutionList.indexOf(tableData.getTableName()));
-                        List<String> primaryKeys = new ArrayList<>();
-                        for (UniqueKey<?> key : table.getKeys()) {
-                            if (key.isPrimary()) {
-                                for (TableField field : key.getFields()) {
-                                    primaryKeys.add(field.getName());
-                                }
-                            }
-                        }
+                        List<String> primaryKeys = determinePrimaryKeys(table);
 
                         Arrays.stream(table.fields()).forEach(f -> {
                             FieldData fieldData = new FieldData(f.getName());
+                            if (primaryKeys.contains(f.getName())) fieldData.setPrimaryKey(true);
                             determineGenerator(sourceConnectionDao, dsl, tableData, f, fieldData);
                             determineCharacteristics(dsl, tableData, f, fieldData);
                             fieldData.setValueDistribution(sourceConnectionDao.determineDistribution(table, f, tableData.getTotalCount(), dsl));
-                            if (primaryKeys.contains(f.getName())) fieldData.setPrimaryKey(true);
                             determineFKData(table, f, fieldData);
                             tableData.getFieldData().add(fieldData);
                             pb.step();
@@ -90,6 +83,18 @@ public class DistributionModelService {
             if (null != threadPool) threadPool.shutdown();
             if (null != dataSource) dataSource.close();
         }
+    }
+
+    private List<String> determinePrimaryKeys(Table<?> table) {
+        List<String> primaryKeys = new ArrayList<>();
+        for (UniqueKey<?> key : table.getKeys()) {
+            if (key.isPrimary()) {
+                for (TableField field : key.getFields()) {
+                    primaryKeys.add(field.getName());
+                }
+            }
+        }
+        return primaryKeys;
     }
 
     private void determineFKData(Table<?> table, Field<?> f, FieldData fieldData) {

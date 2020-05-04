@@ -1,6 +1,7 @@
 package com.kevindeyne.datascrambler.service;
 
 import com.devskiller.jfairy.Fairy;
+import com.kevindeyne.datascrambler.domain.distributionmodel.Characteristics;
 import com.kevindeyne.datascrambler.domain.distributionmodel.FieldData;
 import org.springframework.stereotype.Service;
 
@@ -57,29 +58,76 @@ public class GenerationService {
                 field.setOffset(field.getOffset() + 1);
                 return field.getOffset();
             } else {
-                return generateInteger(maxLength);
+                return generateInteger(maxLength, field.getCharacteristics());
             }
         } else if (Short.class.getName().equals(classIdentifier)) {
             return Math.abs(RANDOM.nextInt(Short.MAX_VALUE));
         } else if(BigDecimal.class.getName().equals(classIdentifier)) {
             return BigDecimal.valueOf(RANDOM.nextDouble());
         } else if(Date.class.getName().equals(classIdentifier)) {
-            int year = Calendar.getInstance().get(Calendar.YEAR);
-            int minDay = (int) LocalDate.of(year-130, 1, 1).toEpochDay();
-            int maxDay = (int) LocalDate.of(year-16, 1, 1).toEpochDay();
-            long randomDay = minDay + RANDOM.nextInt(maxDay - minDay);
-            return LocalDate.ofEpochDay(randomDay);
+            return generateDate(field.getCharacteristics());
         } else if(Timestamp.class.getName().equals(classIdentifier)) {
-            return new Timestamp(new java.util.Date().getTime() - RANDOM.nextInt());
+            return generateTimestamp(field.getCharacteristics());
         } else if(Boolean.class.getName().equals(classIdentifier)) {
             return RANDOM.nextInt(1) == 0;
         }
         throw new RuntimeException("Unknown class identifier:" + classIdentifier);
     }
 
-    private Integer generateInteger(int maxLength) {
+    private Timestamp generateTimestamp(List<String> characteristics) {
+        long randomDay = generateDateLong(characteristics);
+        return new Timestamp(randomDay);
+    }
+
+    private LocalDate generateDate(List<String> characteristics) {
+        long randomDay = generateDateLong(characteristics);
+        return LocalDate.ofEpochDay(randomDay);
+    }
+
+    private long generateDateLong(List<String> characteristics) {
+        boolean canHaveFutureValues = false;
+        boolean canHavePastValues = false;
+        if (null != characteristics) {
+            for (String shortcut : characteristics) {
+                if (Characteristics.CAN_BE_DATE_IN_FUTURE.getShortcutValue().equals(shortcut))
+                    canHaveFutureValues = true;
+                if (Characteristics.CAN_BE_DATE_IN_PAST.getShortcutValue().equals(shortcut)) canHavePastValues = true;
+            }
+        }
+
+        int year = Calendar.getInstance().get(Calendar.YEAR);
+        int minDay = (int) LocalDate.now().toEpochDay();
+        int maxDay = (int) LocalDate.of(year + 30, 1, 1).toEpochDay();
+
+        if (canHavePastValues && canHaveFutureValues) {
+            minDay = (int) LocalDate.of(year - 30, 1, 1).toEpochDay();
+        } else if (canHavePastValues) {
+            minDay = (int) LocalDate.of(year - 30, 1, 1).toEpochDay();
+            maxDay = (int) LocalDate.now().toEpochDay();
+        }
+
+        return minDay + RANDOM.nextInt(maxDay - minDay);
+    }
+
+    private Integer generateInteger(int maxLength, List<String> characteristics) {
+        boolean canHavePositiveValue = false;
+        boolean canHaveNegativeValue = false;
+        if(null != characteristics) {
+            for(String shortcut : characteristics) {
+                if(Characteristics.CAN_BE_POSITIVE_NUMBER.getShortcutValue().equals(shortcut)) canHavePositiveValue = true;
+                if(Characteristics.CAN_BE_NEGATIVE_NUMBER.getShortcutValue().equals(shortcut)) canHaveNegativeValue = true;
+            }
+        }
+
         int m = (int) Math.pow(10, maxLength - 1);
-        return Math.abs(RANDOM.nextInt(9 * m));
+        int value = RANDOM.nextInt(9 * m);
+        if(canHavePositiveValue && canHaveNegativeValue) {
+            return value;
+        } else if(canHavePositiveValue) {
+            return Math.abs(value);
+        } else {
+            return -Math.abs(value);
+        }
     }
 
     public String generateString(int maxLength, String fieldName) {
@@ -113,7 +161,7 @@ public class GenerationService {
     }
 
     private String generateNumberString(int maxLength) {
-        return String.valueOf(generateInteger(maxLength));
+        return String.valueOf(generateInteger(maxLength, Collections.singletonList(Characteristics.CAN_BE_POSITIVE_NUMBER.getShortcutValue())));
     }
 
     private String generatePhone(int maxLength) {
