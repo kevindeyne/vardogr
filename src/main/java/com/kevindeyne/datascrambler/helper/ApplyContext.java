@@ -13,9 +13,10 @@ public class ApplyContext {
     private TableData table;
     private boolean tableExists;
     private int factor;
+    private boolean clean;
 
-    public ApplyContext(int factor) {
-        this.factor = factor;
+    public ApplyContext(int factor, boolean clean) {
+        this.factor = factor; this.clean = clean;
     }
 
     public ApplyContext withTable(TableData table, boolean tableExists) {

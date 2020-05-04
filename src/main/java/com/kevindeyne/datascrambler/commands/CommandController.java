@@ -79,11 +79,11 @@ public class CommandController {
     }
 
     @ShellMethod("Generates data based on the model")
-    public String generate(@ShellOption(defaultValue="1") @Positive int factor) {
+    public String generate(@ShellOption(defaultValue="1") @Positive int factor, boolean clean) {
         if(!fileService.doesFileExist(DISTRIBUTION_MODEL_JSON, MSG_DIST_FOUND, MSG_DIST_NOT_FOUND)) return MSG_DIST_REQUIRED;
 
         HikariDataSource dataSource = null;
-        ApplyContext context = new ApplyContext(factor);
+        ApplyContext context = new ApplyContext(factor, clean);
 
         try {
             Config config = configService.loadTargetConfig();

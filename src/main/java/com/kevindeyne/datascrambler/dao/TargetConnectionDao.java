@@ -118,10 +118,12 @@ public class TargetConnectionDao {
         });
     }
 
-    public void pushData(DSLContext dsl, TableData table) {
+    public void pushData(DSLContext dsl, TableData table, boolean clean) {
         List<Field<?>> fields = new ArrayList<>();
 
-        final long total = table.getTotalCount();
+        long total = table.getTotalCount();
+        if(!clean) total -= dsl.selectCount().from(table(quotedName(table.getTableName()))).fetchOne(0, long.class);
+        if(total < 0) total = 0;
 
         Map<String, Long> skipList = new HashMap<>();
         Map<String, Object> skipListData = new HashMap<>();
@@ -132,61 +134,64 @@ public class TargetConnectionDao {
 
         List<Map<String, Object>> pkData = pkDistributionService.generatePrimaryKey(table);
 
-        try (ProgressBar pb = new ProgressBar("Generating data for " + table.getTableName(), total)) {
-            for (long i = 0; i < total; i++) {
-                List<Object> data = new LinkedList<>();
-                for (FieldData field : table.getFieldData()) {
-                    final String fieldName = field.getFieldName();
-                    if(field.isPrimaryKey()) {
-                        if(field.getForeignKeyData() != null) {
-                            final Object pkId = pkData.get((int) i).get(fieldName);
-                            data.add(pkId);
-                        } else {
-                            checkPrefetch(dsl, table, field);
-                            data.add(generateNewDataField(field));
-                        }
-                    } else {
-                        Long skipListValue = skipList.get(fieldName);
-                        if (skipListValue == null) {
-                            Double percentage = determineActivePercentage(percentagesHandled, field);
-
-                            long skipTo = calculateSkipTo(total, i, percentage);
-                            skipList.put(fieldName, skipTo);
-                            Object gen;
-                            short maxLoop = 1000;
-                            do {
+        if(total != 0) {
+            try (ProgressBar pb = new ProgressBar("Generating data for " + table.getTableName(), total)) {
+                //TODO
+                for (long i = 0; i < total; i++) {
+                    List<Object> data = new LinkedList<>();
+                    for (FieldData field : table.getFieldData()) {
+                        final String fieldName = field.getFieldName();
+                        if(field.isPrimaryKey()) {
+                            if(field.getForeignKeyData() != null) {
+                                final Object pkId = pkData.get((int) i).get(fieldName);
+                                data.add(pkId);
+                            } else {
                                 checkPrefetch(dsl, table, field);
-                                gen = generateNewDataField(field);
-                                if(maxLoop-- < 0) break;
-                            } while (skipListData.containsValue(gen));
+                                data.add(generateNewDataField(field));
+                            }
+                        } else {
+                            Long skipListValue = skipList.get(fieldName);
+                            if (skipListValue == null) {
+                                Double percentage = determineActivePercentage(percentagesHandled, field);
 
-                            skipListData.put(fieldName, gen);
-                            skipListValue = skipTo;
-                        }
+                                long skipTo = calculateSkipTo(total, i, percentage);
+                                skipList.put(fieldName, skipTo);
+                                Object gen;
+                                short maxLoop = 1000;
+                                do {
+                                    checkPrefetch(dsl, table, field);
+                                    gen = generateNewDataField(field);
+                                    if(maxLoop-- < 0) break;
+                                } while (skipListData.containsValue(gen));
 
-                        data.add(skipListData.get(fieldName));
+                                skipListData.put(fieldName, gen);
+                                skipListValue = skipTo;
+                            }
 
-                        if (i + 1 == skipListValue) {
-                            skipList.put(fieldName, null);
-                            skipListData.put(fieldName, null);
+                            data.add(skipListData.get(fieldName));
+
+                            if (i + 1 == skipListValue) {
+                                skipList.put(fieldName, null);
+                                skipListData.put(fieldName, null);
+                            }
                         }
                     }
-                }
 
-                try {
-                    dsl.insertInto(table(quotedName(table.getTableName())), fields)
-                            .values(data)
-                            .execute();
-                } catch (DataAccessException e) {
+                    try {
+                        dsl.insertInto(table(quotedName(table.getTableName())), fields)
+                                .values(data)
+                                .execute();
+                    } catch (DataAccessException e) {
                     /*if (e.getMessage().contains("duplicate") || e.getMessage().contains(" violates foreign key")) {
                         //System.err.println(e.getMessage() + " for table: " + table.getTableName());
                         pb.step();
                         continue;
                     }*/
 
-                    throw e;
+                        throw e;
+                    }
+                    pb.step();
                 }
-                pb.step();
             }
         }
         pkData = null;

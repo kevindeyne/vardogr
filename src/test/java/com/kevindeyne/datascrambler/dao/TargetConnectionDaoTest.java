@@ -62,7 +62,7 @@ public class TargetConnectionDaoTest {
         table.setFieldData(Collections.singletonList(fieldData));
 
         Mockito.when(generationService.generate(anyString(), anyInt(), any(FieldData.class))).thenReturn(UUID.randomUUID());
-        dao.pushData(dsl, table);
+        dao.pushData(dsl, table, true);
         Mockito.verify(generationService, Mockito.times(3)).generate(anyString(), anyInt(), any(FieldData.class));
     }
 
