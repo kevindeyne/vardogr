@@ -15,16 +15,21 @@ Only tested with MariaDB and PostgreSQL.
 
 ## Commands
 > build 
+
 Start with this command. This will build up the distribution model from the production database. It will ask you for read-only credentials.
 Upon rerun, it will remember a valid configuration file and skip asking for credentials. Password is stored encrypted.
 
+
 >generate --factor 2 --clean
+
 This takes a distribution model and applies it to a lower environment database. It will ask for credentials which require write access.
 There are two parameters:
 - factor: Allows for scaling the model by a certain factor. Ie: generate --factor 2 will generate data 2x the size of the production data.
 - clean: By default, the generation 'appends'. Ie if a production table contains 100 records and the same table contains 25 records in test, by default it will only add 75 new records. By explicitly defining the clean option, it will trunctate the data first and create 100 brand new records.
 
+
 > help
+
 You can always use help to get up to date documentation on available commands.
 
 ## How to build / run 
