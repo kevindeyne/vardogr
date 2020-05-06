@@ -10,6 +10,6 @@ public class ColorPromptProvider implements PromptProvider {
 
     @Override
     public AttributedString getPrompt() {
-        return new AttributedString("BCLONE:>", AttributedStyle.DEFAULT.foreground(AttributedStyle.CYAN));
+        return new AttributedString("VARDØGR:>", AttributedStyle.DEFAULT.foreground(AttributedStyle.CYAN));
     }
 }
