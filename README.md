@@ -32,6 +32,8 @@ There are two parameters:
 
 You can always use help to get up to date documentation on available commands.
 
+<img src="./example.gif" alt="Image showcasing the usage visually" width="600" height="304">
+
 ## How to build / run 
 This product uses Spring Shell and Maven. As such, you can build the project as such: 
 > mvn clean install
