@@ -72,7 +72,7 @@
 		<dependency>
 			<groupId>org.jooq</groupId>
 			<artifactId>jooq-meta</artifactId>
-			<version>3.13.4</version>
+			<version>3.14.2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jasypt</groupId>
