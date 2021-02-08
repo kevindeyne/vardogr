@@ -187,6 +187,16 @@ public class OrderOfExecutionTest {
                 }
 
                 @Override
+                public List<TableField<ExampleRecord, ?>> getKeyFields() {
+                    return null;
+                }
+
+                @Override
+                public TableField<ExampleRecord, ?>[] getKeyFieldsArray() {
+                    return new TableField[0];
+                }
+
+                @Override
                 public ExampleRecord fetchParent(ExampleRecord exampleRecord) throws DataAccessException {
                     return null;
                 }
@@ -217,6 +227,36 @@ public class OrderOfExecutionTest {
                 }
 
                 @Override
+                public Table<ExampleRecord> parent(ExampleRecord exampleRecord) {
+                    return null;
+                }
+
+                @Override
+                public Table<ExampleRecord> parents(ExampleRecord... exampleRecords) {
+                    return null;
+                }
+
+                @Override
+                public Table<ExampleRecord> parents(Collection<? extends ExampleRecord> collection) {
+                    return null;
+                }
+
+                @Override
+                public Table<ExampleRecord> children(ExampleRecord exampleRecord) {
+                    return null;
+                }
+
+                @Override
+                public Table<ExampleRecord> children(ExampleRecord... exampleRecords) {
+                    return null;
+                }
+
+                @Override
+                public Table<ExampleRecord> children(Collection<? extends ExampleRecord> collection) {
+                    return null;
+                }
+
+                @Override
                 public Table<ExampleRecord> getTable() {
                     return new ExampleTable(getName());
                 }
@@ -242,6 +282,11 @@ public class OrderOfExecutionTest {
                 }
 
                 @Override
+                public boolean nullable() {
+                    return false;
+                }
+
+                @Override
                 public String getName() {
                     return null;
                 }
@@ -258,6 +303,11 @@ public class OrderOfExecutionTest {
 
                 @Override
                 public String getComment() {
+                    return null;
+                }
+
+                @Override
+                public Comment getCommentPart() {
                     return null;
                 }
             };
@@ -317,6 +367,11 @@ public class OrderOfExecutionTest {
         }
 
         @Override
+        public boolean nullable() {
+            return false;
+        }
+
+        @Override
         public String getName() {
             return null;
         }
@@ -333,6 +388,11 @@ public class OrderOfExecutionTest {
 
         @Override
         public String getComment() {
+            return null;
+        }
+
+        @Override
+        public Comment getCommentPart() {
             return null;
         }
 
@@ -383,6 +443,11 @@ public class OrderOfExecutionTest {
 
         @Override
         public String getComment() {
+            return null;
+        }
+
+        @Override
+        public Comment getCommentPart() {
             return null;
         }
 
@@ -747,6 +812,16 @@ public class OrderOfExecutionTest {
         }
 
         @Override
+        public Condition isDocument() {
+            return null;
+        }
+
+        @Override
+        public Condition isNotDocument() {
+            return null;
+        }
+
+        @Override
         public Condition isJson() {
             return null;
         }
@@ -777,12 +852,22 @@ public class OrderOfExecutionTest {
         }
 
         @Override
+        public Condition isDistinctFrom(Select<? extends Record1<ExampleTable>> select) {
+            return null;
+        }
+
+        @Override
         public Condition isNotDistinctFrom(ExampleTable exampleTable) {
             return null;
         }
 
         @Override
         public Condition isNotDistinctFrom(Field<ExampleTable> field) {
+            return null;
+        }
+
+        @Override
+        public Condition isNotDistinctFrom(Select<? extends Record1<ExampleTable>> select) {
             return null;
         }
 

@@ -45,22 +45,22 @@ public class SourceConnectionDao {
     }
 
     public List<Table<?>> getAllTables(DataSource dataSource, String schemaName) {
-        try (DSLContext dsl = using(new DefaultConfiguration().derive(dataSource))) {
-            dsl.settings().setExecuteLogging(false);
-            final Optional<Schema> optionalSchema = dsl.meta().getSchemas().stream()
-                    .filter(s -> s.getName().equals(schemaName))
-                    .findFirst();
-            if(!optionalSchema.isPresent()) {
-                Optional<Schema> suggestion = dsl.meta().getSchemas().stream().filter(s -> s.getName().startsWith(schemaName.substring(0, 1))).findFirst();
-                if(!suggestion.isPresent()) suggestion = dsl.meta().getSchemas().stream().findFirst();
-                if(suggestion.isPresent()) throw new RuntimeException("Schema '" + schemaName + "' is invalid. Did you mean: '" + suggestion.get().getName() + "'?");
-                throw new RuntimeException("Schema '" + schemaName + "' is invalid. No schemas found.");
-            }
-            final List<Table<?>> tables = dsl.meta(optionalSchema.get()).getTables();
-            return tables.stream()
-                    .filter(t -> TableOptions.TableType.TABLE.equals(t.getOptions().type()) && t.fields().length > 0)
-                    .collect(Collectors.toList());
+        DSLContext dsl = using(new DefaultConfiguration().derive(dataSource));
+        dsl.settings().setExecuteLogging(false);
+        final Optional<Schema> optionalSchema = dsl.meta().getSchemas().stream()
+                .filter(s -> s.getName().equals(schemaName))
+                .findFirst();
+        if(!optionalSchema.isPresent()) {
+            Optional<Schema> suggestion = dsl.meta().getSchemas().stream().filter(s -> s.getName().startsWith(schemaName.substring(0, 1))).findFirst();
+            if(!suggestion.isPresent()) suggestion = dsl.meta().getSchemas().stream().findFirst();
+            if(suggestion.isPresent()) throw new RuntimeException("Schema '" + schemaName + "' is invalid. Did you mean: '" + suggestion.get().getName() + "'?");
+            throw new RuntimeException("Schema '" + schemaName + "' is invalid. No schemas found.");
         }
+        final List<Table<?>> tables = dsl.meta(optionalSchema.get()).getTables();
+        return tables.stream()
+                .filter(t -> TableOptions.TableType.TABLE.equals(t.getOptions().type()) && t.fields().length > 0)
+                .collect(Collectors.toList());
+
     }
 
     public Long count(String tableName, DSLContext dsl) {

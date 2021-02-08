@@ -97,14 +97,12 @@ public class CommandController {
             model.getTables().sort(Comparator.comparing(TableData::getOrderOfExecution));
             context.setTargetConnectionDao(dao);
 
-            try (DSLContext dsl = using(new DSLConfiguration(dataSource, config.getDbTypeTarget()).getDbConfiguration())) {
-                context.setDsl(dsl);
+            DSLContext dsl = using(new DSLConfiguration(dataSource, config.getDbTypeTarget()).getDbConfiguration());
+            context.setDsl(dsl);
 
-                for (TableData table : model.getTables()) {
-                    distributionModelService.apply(context.withTable(table, existingTableNames.contains(table.getTableName())));
-                }
+            for (TableData table : model.getTables()) {
+                distributionModelService.apply(context.withTable(table, existingTableNames.contains(table.getTableName())));
             }
-
         } catch (Exception e) {
             e.printStackTrace();
             //configService.loadTargetConfig(true);

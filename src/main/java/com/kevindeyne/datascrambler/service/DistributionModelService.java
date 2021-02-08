@@ -42,7 +42,8 @@ public class DistributionModelService {
             try (ProgressBar pb = new ProgressBar("Building model", calculateTotalFieldsForModel(allTables))) {
                 threadPool = Executors.newFixedThreadPool(10);
                 allTables.forEach(table -> threadPool.execute(() -> {
-                    try (DSLContext dsl = using(new DSLConfiguration(dataSource, sourceConnectionDao.getSqlDialect()).getDbConfiguration())) {
+                    try {
+                        DSLContext dsl = using(new DSLConfiguration(dataSource, sourceConnectionDao.getSqlDialect()).getDbConfiguration());
                         TableData tableData = new TableData(table.getName());
                         tableData.setTotalCount(sourceConnectionDao.count(tableData.getTableName(), dsl));
                         tableData.setOrderOfExecution(orderOfExecutionList.indexOf(tableData.getTableName()));

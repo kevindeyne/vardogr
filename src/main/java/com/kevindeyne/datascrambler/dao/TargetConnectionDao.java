@@ -53,9 +53,8 @@ public class TargetConnectionDao {
     }
 
     public List<Table<?>> getAllTables(DataSource dataSource) {
-        try (DSLContext dsl = using(new DefaultConfiguration().derive(dataSource))) {
-            return dsl.meta().getTables();
-        }
+        DSLContext dsl = using(new DefaultConfiguration().derive(dataSource));
+        return dsl.meta().getTables();
     }
 
     public void truncate(DSLContext dsl, String tableName) {
