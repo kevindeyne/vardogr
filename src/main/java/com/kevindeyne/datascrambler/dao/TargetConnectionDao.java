@@ -105,7 +105,7 @@ public class TargetConnectionDao {
     }
 
     public void validateTable(DSLContext dsl, TableData table) {
-        //TODO
+        //TODO https://github.com/kevindeyne/vardogr/issues/1
     }
 
     public void createIndexes(DSLContext dsl, TableData table) {
@@ -135,7 +135,7 @@ public class TargetConnectionDao {
 
         if(total != 0) {
             try (ProgressBar pb = new ProgressBar("Generating data for " + table.getTableName(), total)) {
-                //TODO
+                //TODO this code could use some refactoring for clarity -- too much visually going on in one method
                 for (long i = 0; i < total; i++) {
                     List<Object> data = new LinkedList<>();
                     for (FieldData field : table.getFieldData()) {
@@ -181,11 +181,11 @@ public class TargetConnectionDao {
                                 .values(data)
                                 .execute();
                     } catch (DataAccessException e) {
-                    /*if (e.getMessage().contains("duplicate") || e.getMessage().contains(" violates foreign key")) {
-                        //System.err.println(e.getMessage() + " for table: " + table.getTableName());
-                        pb.step();
-                        continue;
-                    }*/
+                        /*if (e.getMessage().contains("duplicate") || e.getMessage().contains(" violates foreign key")) {
+                            //System.err.println(e.getMessage() + " for table: " + table.getTableName());
+                            pb.step();
+                            continue;
+                        }*/
 
                         throw e;
                     }
