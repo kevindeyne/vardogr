@@ -24,8 +24,11 @@ import static org.jooq.impl.DSL.using;
 @Service
 public class DistributionModelService {
 
-    @Autowired
-    private CharacteristicService characteristicService;
+    private final CharacteristicService characteristicService;
+
+    public DistributionModelService(CharacteristicService characteristicService) {
+        this.characteristicService = characteristicService;
+    }
 
     private ExecutorService threadPool;
 
@@ -115,8 +118,12 @@ public class DistributionModelService {
 
     private void determineCharacteristics(DSLContext dsl, TableData tableData, Field<?> f, FieldData fieldData) {
         final String type = fieldData.getGenerator().getOriginalType();
-        if(tableData.getTotalCount() > 1 && characteristicService.supported(type)) {
-            fieldData.setCharacteristics(characteristicService.determineCharacteristics(dsl, tableData.getTableName(), f.getName(), type));
+        try {
+            if (tableData.getTotalCount() > 1 && characteristicService.supported(type)) {
+                fieldData.setCharacteristics(characteristicService.determineCharacteristics(dsl, tableData.getTableName(), f.getName(), type));
+            }
+        } catch (NullPointerException e) {
+            System.out.println("");
         }
     }
 

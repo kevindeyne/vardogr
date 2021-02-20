@@ -50,10 +50,11 @@ public class SourceConnectionDao {
         final Optional<Schema> optionalSchema = dsl.meta().getSchemas().stream()
                 .filter(s -> s.getName().equals(schemaName))
                 .findFirst();
-        if(!optionalSchema.isPresent()) {
+        if (!optionalSchema.isPresent()) {
             Optional<Schema> suggestion = dsl.meta().getSchemas().stream().filter(s -> s.getName().startsWith(schemaName.substring(0, 1))).findFirst();
-            if(!suggestion.isPresent()) suggestion = dsl.meta().getSchemas().stream().findFirst();
-            if(suggestion.isPresent()) throw new RuntimeException("Schema '" + schemaName + "' is invalid. Did you mean: '" + suggestion.get().getName() + "'?");
+            if (!suggestion.isPresent()) suggestion = dsl.meta().getSchemas().stream().findFirst();
+            if (suggestion.isPresent())
+                throw new RuntimeException("Schema '" + schemaName + "' is invalid. Did you mean: '" + suggestion.get().getName() + "'?");
             throw new RuntimeException("Schema '" + schemaName + "' is invalid. No schemas found.");
         }
         final List<Table<?>> tables = dsl.meta(optionalSchema.get()).getTables();
@@ -91,8 +92,8 @@ public class SourceConnectionDao {
     public Generator manualDetermineGenerator(DSLContext dsl, String tableName, String fieldName) {
         final SelectLimitPercentStep<Record1<Object>> sql = dsl.select(field(quotedName(fieldName))).from(table(quotedName(tableName))).limit(1);
         try (Connection connection = DriverManager.getConnection(url, username, password);
-             Statement st = connection.createStatement();
-             ResultSet rs = st.executeQuery(sql.getSQL(ParamType.INLINED))) {
+            Statement st = connection.createStatement();
+            ResultSet rs = st.executeQuery(sql.getSQL(ParamType.INLINED))) {
             ResultSetMetaData metaData = rs.getMetaData();
             Class<?> matchingJavaClass;
             String key;

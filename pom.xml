@@ -136,6 +136,20 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
 			<version>2.0.2-beta</version>
 			<scope>test</scope>
 		</dependency>
+
+		<!-- TEST ONLY -->
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>testcontainers</artifactId>
+			<version>1.15.2</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>org.testcontainers</groupId>
+			<artifactId>mariadb</artifactId>
+			<version>1.15.2</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>

@@ -21,7 +21,7 @@ public class OrderOfExecutionTest {
 
     @Before
     public void init() {
-        service = new DistributionModelService();
+        service = new DistributionModelService(new CharacteristicService());
     }
 
     @Test
