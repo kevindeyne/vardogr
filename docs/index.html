@@ -1,0 +1,92 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+
+  <title>Vardøgr - Test data generation tool</title>
+  <meta name="description" content="Vardøgr is a tool that can push production-like data to test databases securely. It does this by generating a distribution model of the data first - describing the data and its relative distribution.">
+  <meta name="author" content="Kevin Deyne">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&display=swap" rel="stylesheet">
+  <style>
+	#logo {
+		font-family: monospace;
+		text-align: center;
+	}
+	h1, h2, p, li {
+		font-family: 'JetBrains Mono', monospace;
+	}
+	body {
+		background-color: #0d1117;
+		color: #c9d1d9;
+		width: 70vw;
+		margin-left: 15vw;
+	}
+	h2 {
+		text-decoration: underline;
+	}
+	#links {
+		text-align: center;
+		padding-bottom: 2em;
+	}
+	a {
+		color: #6ca7ff;
+	}
+	p.command {
+		background: black;
+		display: inline-block;
+		padding: 0.5em;
+		margin: 0;
+	}
+	span.optional {
+		color: gray;
+	}
+  </style>
+
+</head>
+
+<body>
+	<section id="logo">
+		........................................................<br/>
+		.##..##...####...#####...#####....####....####...#####..<br/>
+		.##..##..##..##..##..##..##..##..##..##..##......##..##.<br/>
+		.##..##..######..#####...##..##..##..##..##.###..#####..<br/>
+		..####...##..##..##..##..##..##..##..##..##..##..##..##.<br/>
+		...##....##..##..##..##..#####....####....####...##..##.<br/>
+		........................................................
+	</section>
+	<p id="links"><a href="https://github.com/kevindeyne/vardogr">Github repo</a> | <a href="https://github.com/kevindeyne/vardogr/releases">Download</a></p>
+		
+	<p>Realistic test data in DEV and QA environments can pinpoint bugs and performance issues early</p>
+	<p>How do we make this data realistic and scalable without compromising production data security?</p>
+	<p>Vardøgr: A tool that can create production-like data by generating a distribution model, then generate data from the model.</p>
+
+	<h2>Distribution model</h2>
+	<p>The distribution model is essentially a description of how your production data looks like. The description contains:</p>
+	<ul>
+		<li>name of the table</li>
+		<li>total row count</li>		
+		<li>name and type of fields</li>
+		<li>value distribution of data (what are the % of data that are the same?)</li>
+		<li>primary, foreign keys and the order of relationships</li>		
+		<li>characteristics (can be blank, have spaces, be a positive or negative number, a date in the future or past, is a name, is a password, a country)</li>		
+		<li>any indexes</li>
+	</ul>
+	
+	<p>Absolutely no actual data gets saved in the model. </p>
+	
+	<p>Based on this description, the tool can then recreate data that follows the same rules. And since it's not related to the actual data, there is no restriction on the scale of said recreation.</p>
+		
+	<h2>Usage</h2>
+	<p class="command">build <span class="optional">--reset</span></p>
+	<p>This connects to your production database (read-only) and builds the distribution model. If this is the first time connecting to the database, a wizard will start to guide you through creating a configuration file. Once a config file is created, the tool remembers how to connect to the database in the future. Credentials are encrypted.</p>
+	<p><span class="optional">--reset</span> Optional: Removes the existing config file.</p>
+	<br/>
+	<p class="command">generate <span class="optional">--factor 2</span> <span class="optional">--clean</span></p>
+	<p>This takes a distribution model and applies it to a lower environment database. It will ask for credentials which require write access.</p>
+	<p><span class="optional">--factor [number]</span> Optional: Scaling the model by a certain factor. For example: generate --factor 2 will generate data 2x the size of the production data. <i>Defaults to 1</i></p>
+	<p><span class="optional">--clean</span> Optional: Causes to truncate tables and then generate data. Without this parameter, the tool simply 'appends'.</p><p>As a concrete example: If the production table contains 10 records, and the test database contains 3 records, then calling this without the clean parameter will cause it to append 7 new records. With the clean parameter, the test table will be truncated to 0 records and then 10 new records would be created.</p>
+	<br>
+</body>
+</html>
