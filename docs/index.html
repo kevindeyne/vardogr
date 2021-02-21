@@ -25,6 +25,7 @@
 	}
 	h2 {
 		text-decoration: underline;
+		padding-top:0.5em;
 	}
 	#links {
 		text-align: center;
@@ -77,7 +78,7 @@
 	<p>Absolutely no actual data gets saved in the model. </p>
 	
 	<p>Based on this description, the tool can then recreate data that follows the same rules. And since it's not related to the actual data, there is no restriction on the scale of said recreation.</p>
-		
+
 	<h2>Usage</h2>
 	<p class="command">build <span class="optional">--reset</span></p>
 	<p>This connects to your production database (read-only) and builds the distribution model. If this is the first time connecting to the database, a wizard will start to guide you through creating a configuration file. Once a config file is created, the tool remembers how to connect to the database in the future. Credentials are encrypted.</p>
@@ -87,6 +88,11 @@
 	<p>This takes a distribution model and applies it to a lower environment database. It will ask for credentials which require write access.</p>
 	<p><span class="optional">--factor [number]</span> Optional: Scaling the model by a certain factor. For example: generate --factor 2 will generate data 2x the size of the production data. <i>Defaults to 1</i></p>
 	<p><span class="optional">--clean</span> Optional: Causes to truncate tables and then generate data. Without this parameter, the tool simply 'appends'.</p><p>As a concrete example: If the production table contains 10 records, and the test database contains 3 records, then calling this without the clean parameter will cause it to append 7 new records. With the clean parameter, the test table will be truncated to 0 records and then 10 new records would be created.</p>
-	<br>
+	
+	<h2>How to run</h2>
+	<p>Vardøgr comes as an executable jar. You need to have Java installed.</p>
+	<p class="command">java -jar <span class="optional">vardogr.jar</span></p>
+	<p><br></p>
+	
 </body>
 </html>
