@@ -5,7 +5,7 @@ public class MessageConstants {
     private MessageConstants() {}
 
     public static final String MSG_CONFIG_FOUND = "Config file found.";
-    public static final String MSG_CONFIG_NOT_FOUND = "No config file found. Please provide us with some information on your source database.";
+    public static final String MSG_CONFIG_NOT_FOUND = "The model is built on the production data. Provide read-only credentials. No production data is stored. Some metadata queries will be run.";
 
     public static final String MSG_BUILD_COMPLETED = "Model created. You can now use this model to generate data. Do this by calling generate";
 
