@@ -1,5 +1,5 @@
 # Vardøgr
-![Java CI with Maven](https://github.com/kevindeyne/data-scrambler/workflows/Java%20CI%20with%20Maven/badge.svg)
+![pre-release](https://github.com/kevindeyne/vardogr/workflows/pre-release/badge.svg)
 
 Realistic test data in development and qa environments can pinpoint bugs and performance issues early. However taking direct copies violates the security of data and takes time. It also does not scale. 
 
