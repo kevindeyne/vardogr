@@ -14,6 +14,7 @@ import com.kevindeyne.datascrambler.service.*;
 import com.zaxxer.hikari.HikariDataSource;
 import org.jooq.DSLContext;
 import org.jooq.Named;
+import org.jooq.meta.derby.sys.Sys;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
@@ -52,20 +53,38 @@ public class CommandController {
 
     @PostConstruct
     public void init() {
-        System.out.println(PrintCmds.green("Use build"));
+        printLogo();
+        System.out.println();
+        System.out.println("# ----------");
+        System.out.println("# Use build to get started. This will validate a config file exists and build the distribution model.");
+        System.out.println("# Use generate once a model has been constructed.");
+        System.out.println("# Use help to see details on parameters.");
+        System.out.println("# ----------");
+
+        configService.hasConfig();
+    }
+
+    private void printLogo() {
+        System.out.println();
+        System.out.println(".##..##...####...#####...#####....####....####...#####..");
+        System.out.println(".##..##..##..##..##..##..##..##..##..##..##......##..##.");
+        System.out.println(".##..##..######..#####...##..##..##..##..##.###..#####..");
+        System.out.println("..####...##..##..##..##..##..##..##..##..##..##..##..##.");
+        System.out.println("...##....##..##..##..##..#####....####....####...##..##.");
+        System.out.println("........................................................");
     }
 
     @ShellMethod("Builds the model")
-    public String build() {
+    public String build(boolean reset) {
         final SourceConnectionDao sourceConnectionDao;
         String schemaSource;
         try {
+            if(reset) configService.clearConfigs();
             Config config = configService.loadSourceConfig();
             sourceConnectionDao = config.setupSourceConnection();
             schemaSource = config.getSchemaSource();
         } catch (Exception e) {
-            configService.loadSourceConfig(true);
-            return build();
+            return "ERROR: Please retry. An error occurred (" + e.getMessage() + ")";
         }
 
         try {

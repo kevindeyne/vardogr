@@ -75,6 +75,10 @@ public class ConfigService {
         return loadSourceConfig(false);
     }
 
+    public boolean hasConfig() {
+        return fileService.doesFileExist(CONFIG_JSON, MSG_CONFIG_FOUND, "No config file yet defined. Run 'build' for the wizard to get your started.");
+    }
+
     public Config loadSourceConfig(boolean force) {
         final JsonObject configObj;
 
@@ -83,13 +87,13 @@ public class ConfigService {
                 configObj = readConfigObj();
             } else {
                 configObj = new JsonObject();
-                configObj.addProperty(HOST_SOURCE, input.getString("Hostname (Source)", "localhost"));
-                configObj.addProperty(PORT_SOURCE, input.getInteger("Port (Source)", 3306));
-                configObj.addProperty(USERNAME_SOURCE, input.getString("Username (Source)"));
-                configObj.addProperty(PASSWORD_SOURCE, encryptService.encrypt(input.getPassword("Password (Source)")));
-                configObj.addProperty(DB_NAME_SOURCE, input.getString("Database name (Source)"));
-                configObj.addProperty(SCHEMA_SOURCE, input.getString("Schema name (Source)"));
-                configObj.addProperty(DB_TYPE_SOURCE, input.getOption("DB type (Source)", SupportedDBType.all()));
+                configObj.addProperty(HOST_SOURCE, input.getString("[1/7] > Hostname (Source)", "localhost"));
+                configObj.addProperty(PORT_SOURCE, input.getInteger("[2/7] > Port (Source)", 3306));
+                configObj.addProperty(USERNAME_SOURCE, input.getString("[3/7] > Username (Source)"));
+                configObj.addProperty(PASSWORD_SOURCE, encryptService.encrypt(input.getPassword("[4/7] > Password (Source)")));
+                configObj.addProperty(DB_NAME_SOURCE, input.getString("[5/7] > Database name (Source)"));
+                configObj.addProperty(SCHEMA_SOURCE, input.getString("[6/7] > Schema name (Source, Optional)", ""));
+                configObj.addProperty(DB_TYPE_SOURCE, input.getOption("[7/7] > DB type (Source)", SupportedDBType.all()));
 
                 configObj.addProperty(HOST_TARGET, EMPTY);
                 configObj.addProperty(PORT_TARGET, 0);
@@ -100,17 +104,17 @@ public class ConfigService {
                 fileService.writeToFile(configObj, CONFIG_JSON);
             }
         } catch (Exception e) {
-            shellHelper.printError("Config file corrupt. Restarting file creation ...");
+            shellHelper.printError("Config file corrupt.");
             fileService.deleteFile(CONFIG_JSON);
-            return loadSourceConfig(true);
+            throw new RuntimeException(e);
         }
 
         try {
             return new Config(configObj, encryptService);
         } catch (Exception e) {
-            shellHelper.printError("Config file has corrupted content. Restarting file creation ...");
+            shellHelper.printError("Config file has corrupted content.");
             fileService.deleteFile(CONFIG_JSON);
-            return loadSourceConfig(true);
+            throw e;
         }
     }
 
@@ -121,5 +125,9 @@ public class ConfigService {
         } catch (Exception e) {
             throw new ConfigFileException("Could not read config file: " + e.getMessage(), e);
         }
+    }
+
+    public void clearConfigs() {
+        fileService.deleteFile(CONFIG_JSON);
     }
 }

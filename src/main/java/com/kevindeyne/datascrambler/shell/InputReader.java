@@ -65,11 +65,7 @@ public class InputReader {
         String resultString = null;
         do {
             String result = prompt(prompt, defaultValue);
-            if (StringUtils.hasText(result)) {
-                resultString = result;
-            } else {
-                shellHelper.printWarning("Can not be empty. Please enter valid value.");
-            }
+            resultString = result;
         } while (resultString == null);
         return resultString;
     }
