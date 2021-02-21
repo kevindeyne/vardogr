@@ -3,21 +3,21 @@ package com.kevindeyne.datascrambler.integration;
 import org.jooq.SQLDialect;
 import org.junit.Rule;
 import org.testcontainers.containers.JdbcDatabaseContainer;
-import org.testcontainers.containers.MariaDBContainer;
+import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.utility.DockerImageName;
 
-public class MariaDBTest extends AbstractDBIntegrationTest {
+public class PostgresDBTest extends AbstractDBIntegrationTest {
 
     @Rule
-    public MariaDBContainer mariaDB = new MariaDBContainer(DockerImageName.parse("mariadb"));
+    public PostgreSQLContainer postgres = new PostgreSQLContainer(DockerImageName.parse("postgres"));
 
     @Override
     protected JdbcDatabaseContainer getDB() {
-        return mariaDB;
+        return postgres;
     }
 
     @Override
     protected SQLDialect getDialect() {
-        return SQLDialect.MARIADB;
+        return SQLDialect.POSTGRES;
     }
 }

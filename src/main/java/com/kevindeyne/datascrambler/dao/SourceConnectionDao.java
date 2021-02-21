@@ -2,6 +2,7 @@ package com.kevindeyne.datascrambler.dao;
 
 import com.kevindeyne.datascrambler.domain.distributionmodel.Generator;
 import com.kevindeyne.datascrambler.domain.distributionmodel.ValueDistribution;
+import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
 import com.kevindeyne.datascrambler.mapping.ColumnTypeMapping;
 import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.zaxxer.hikari.HikariDataSource;
@@ -115,5 +116,15 @@ public class SourceConnectionDao {
         } catch (Exception e) {
             throw new RuntimeException("Error during manual determining of generator", e);
         }
+    }
+
+    public String determineSchemaDynamically() throws ModelCreationException {
+        try (Connection connection = DriverManager.getConnection(url, username, password)){
+            String schema = connection.getSchema();
+            if(schema != null) return schema;
+        } catch (Exception e) {
+            throw new ModelCreationException(e.getMessage(), e);
+        }
+        return "";
     }
 }
