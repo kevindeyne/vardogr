@@ -2,7 +2,7 @@ package com.kevindeyne.datascrambler.dao;
 
 import com.kevindeyne.datascrambler.domain.distributionmodel.*;
 import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
-import com.kevindeyne.datascrambler.service.GenerationService;
+import com.kevindeyne.datascrambler.service.GenerationHelperService;
 import com.kevindeyne.datascrambler.service.PKDistributionService;
 import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
@@ -26,14 +26,14 @@ public class TargetConnectionDao {
     private final String url;
     private final String username;
     private final String password;
-    private final GenerationService generationService;
+    private final GenerationHelperService generationHelperService;
     private final PKDistributionService pkDistributionService;
 
-    public TargetConnectionDao(String url, String username, String password, GenerationService generationService, PKDistributionService pkDistributionService) {
+    public TargetConnectionDao(String url, String username, String password, GenerationHelperService generationHelperService, PKDistributionService pkDistributionService) {
         this.url = url;
         this.username = username;
         this.password = password;
-        this.generationService = generationService;
+        this.generationHelperService = generationHelperService;
         this.pkDistributionService = pkDistributionService;
     }
 
@@ -67,8 +67,6 @@ public class TargetConnectionDao {
     }
 
     public void createTable(DSLContext dsl, TableData table) {
-        table.setTotalCount(table.getTotalCount()*2);
-
         List<Field<?>> primaryKeys = new ArrayList<>();
         CreateTableColumnStep createStep = null;
         final Table<Record> tableRef = table(quotedName(table.getTableName()));
@@ -98,9 +96,11 @@ public class TargetConnectionDao {
 
         table.getFieldData().forEach(fieldData -> {
             final ForeignKeyData fk = fieldData.getForeignKeyData();
-            dsl.alterTable(tableRef)
-                    .add(foreignKey(field(quotedName(fieldData.getFieldName()))).references(quotedName(fk.getTable()), quotedName(fk.getKey())))
-                    .execute();
+            if(fk != null) {
+                dsl.alterTable(tableRef)
+                        .add(foreignKey(field(quotedName(fieldData.getFieldName()))).references(quotedName(fk.getTable()), quotedName(fk.getKey())))
+                        .execute();
+            }
         });
     }
 
@@ -258,7 +258,7 @@ public class TargetConnectionDao {
             return result;
         } else {
             final Generator g = field.getGenerator();
-            return generationService.generate(g.getOriginalType(), g.getLength(), field);
+            return generationHelperService.generate(g.getOriginalType(), g.getLength(), field);
         }
     }
 }

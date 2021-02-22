@@ -7,13 +7,13 @@ import java.util.Set;
 
 public class JFairyTest {
 
-    GenerationService generationService = new GenerationService();
+    GenerationHelperService generationHelperService = new GenerationHelperService();
 
     @Test
     public void testUniquenessAddress() {
         Set<String> streets = new HashSet<>();
         for (int i = 0; i < 10000; i++) {
-            streets.add(generationService.generateStreet(255));
+            streets.add(generationHelperService.generateStreet(255));
         }
         System.out.println("Unique streets: " + streets.size());
         Assert.assertTrue(streets.size() > 9500);
@@ -23,7 +23,7 @@ public class JFairyTest {
     public void testUniquenessRandom() {
         Set<String> names = new HashSet<>();
         for (int i = 0; i < 10000; i++) {
-            names.add(generationService.randomName());
+            names.add(generationHelperService.randomName());
         }
         System.out.println("Unique names: " + names.size());
         Assert.assertTrue(names.size() > 9500);

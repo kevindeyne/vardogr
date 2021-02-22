@@ -1,5 +1,6 @@
 package com.kevindeyne.datascrambler.integration;
 
+import com.kevindeyne.datascrambler.helper.SupportedDBType;
 import org.jooq.SQLDialect;
 import org.junit.Rule;
 import org.testcontainers.containers.JdbcDatabaseContainer;
@@ -19,5 +20,10 @@ public class PostgresDBTest extends AbstractDBIntegrationTest {
     @Override
     protected SQLDialect getDialect() {
         return SQLDialect.POSTGRES;
+    }
+
+    @Override
+    protected SupportedDBType getDBType() {
+        return SupportedDBType.POSTGRESQL;
     }
 }

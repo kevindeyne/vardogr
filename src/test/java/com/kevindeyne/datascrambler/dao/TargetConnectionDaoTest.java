@@ -5,7 +5,7 @@ import com.kevindeyne.datascrambler.domain.distributionmodel.Generator;
 import com.kevindeyne.datascrambler.domain.distributionmodel.TableData;
 import com.kevindeyne.datascrambler.domain.distributionmodel.ValueDistribution;
 import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
-import com.kevindeyne.datascrambler.service.GenerationService;
+import com.kevindeyne.datascrambler.service.GenerationHelperService;
 import com.kevindeyne.datascrambler.service.PKDistributionService;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
@@ -30,7 +30,7 @@ public class TargetConnectionDaoTest {
     private TargetConnectionDao dao;
 
     @Mock
-    private GenerationService generationService;
+    private GenerationHelperService generationHelperService;
 
     @Mock
     private PKDistributionService pkDistributionService;
@@ -38,7 +38,7 @@ public class TargetConnectionDaoTest {
     @Before
     public void init() {
         MockitoAnnotations.initMocks(this);
-        dao = new TargetConnectionDao("", "", "", generationService, pkDistributionService);
+        dao = new TargetConnectionDao("", "", "", generationHelperService, pkDistributionService);
     }
 
     @Test
@@ -61,9 +61,9 @@ public class TargetConnectionDaoTest {
         fieldData.setValueDistribution(valueDistribution);
         table.setFieldData(Collections.singletonList(fieldData));
 
-        Mockito.when(generationService.generate(anyString(), anyInt(), any(FieldData.class))).thenReturn(UUID.randomUUID());
+        Mockito.when(generationHelperService.generate(anyString(), anyInt(), any(FieldData.class))).thenReturn(UUID.randomUUID());
         dao.pushData(dsl, table, true);
-        Mockito.verify(generationService, Mockito.times(3)).generate(anyString(), anyInt(), any(FieldData.class));
+        Mockito.verify(generationHelperService, Mockito.times(3)).generate(anyString(), anyInt(), any(FieldData.class));
     }
 
 }

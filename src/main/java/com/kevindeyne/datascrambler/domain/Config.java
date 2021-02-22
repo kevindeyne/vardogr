@@ -6,7 +6,7 @@ import com.kevindeyne.datascrambler.dao.TargetConnectionDao;
 import com.kevindeyne.datascrambler.exceptions.ConnectionFailureException;
 import com.kevindeyne.datascrambler.helper.SupportedDBType;
 import com.kevindeyne.datascrambler.service.EncryptService;
-import com.kevindeyne.datascrambler.service.GenerationService;
+import com.kevindeyne.datascrambler.service.GenerationHelperService;
 import com.kevindeyne.datascrambler.service.PKDistributionService;
 import lombok.Data;
 
@@ -65,6 +65,15 @@ public class Config {
         }
     }
 
+    public Config(String usernameTarget, String passwordTarget, Integer portTarget, String hostTarget, String dbNameTarget, SupportedDBType dbTypeTarget) {
+        this.usernameTarget = usernameTarget;
+        this.passwordTarget = passwordTarget;
+        this.portTarget = portTarget;
+        this.hostTarget = hostTarget;
+        this.dbNameTarget = dbNameTarget;
+        this.dbTypeTarget = dbTypeTarget;
+    }
+
     public SourceConnectionDao setupSourceConnection() throws ConnectionFailureException {
         String url = setupUrl(dbTypeSource.getPlaceholder(), hostSource, portSource, dbNameSource);
         SourceConnectionDao connection = new SourceConnectionDao(url, usernameSource, passwordSource, dbTypeSource.getSQLDialect());
@@ -76,9 +85,9 @@ public class Config {
         throw new ConnectionFailureException("Could not connect to SOURCE DB");
     }
 
-    public TargetConnectionDao setupTargetConnection(GenerationService generationService, PKDistributionService pkDistributionService) throws ConnectionFailureException {
+    public TargetConnectionDao setupTargetConnection(GenerationHelperService generationHelperService, PKDistributionService pkDistributionService) throws ConnectionFailureException {
         String url = setupUrl(dbTypeTarget.getPlaceholder(), hostTarget, portTarget, dbNameTarget);
-        TargetConnectionDao connection = new TargetConnectionDao(url, usernameTarget, passwordTarget, generationService, pkDistributionService);
+        TargetConnectionDao connection = new TargetConnectionDao(url, usernameTarget, passwordTarget, generationHelperService, pkDistributionService);
         try {
             if (connection.testConnection()) return connection;
         } catch(SQLException e) {

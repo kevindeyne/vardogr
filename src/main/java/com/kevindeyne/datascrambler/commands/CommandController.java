@@ -6,15 +6,14 @@ import com.kevindeyne.datascrambler.domain.Config;
 import com.kevindeyne.datascrambler.domain.distributionmodel.DistributionModel;
 import com.kevindeyne.datascrambler.domain.distributionmodel.TableData;
 import com.kevindeyne.datascrambler.exceptions.ConfigFileException;
+import com.kevindeyne.datascrambler.exceptions.ConnectionFailureException;
 import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
 import com.kevindeyne.datascrambler.helper.ApplyContext;
 import com.kevindeyne.datascrambler.helper.DSLConfiguration;
-import com.kevindeyne.datascrambler.helper.PrintCmds;
 import com.kevindeyne.datascrambler.service.*;
 import com.zaxxer.hikari.HikariDataSource;
 import org.jooq.DSLContext;
 import org.jooq.Named;
-import org.jooq.meta.derby.sys.Sys;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
@@ -37,18 +36,17 @@ public class CommandController {
     private final DistributionModelService distributionModelService;
     private final FileService fileService;
     private final GenerationService generationService;
-    private final PKDistributionService pkDistributionService;
 
     public CommandController(ConfigService configService,
                              DistributionModelService distributionModelService,
                              FileService fileService,
-                             GenerationService generationService,
-                             PKDistributionService pkDistributionService) {
+                             GenerationHelperService generationHelperService,
+                             PKDistributionService pkDistributionService,
+                             GenerationService generationService) {
         this.configService = configService;
         this.distributionModelService = distributionModelService;
         this.fileService = fileService;
         this.generationService = generationService;
-        this.pkDistributionService = pkDistributionService;
     }
 
     @PostConstruct
@@ -98,39 +96,11 @@ public class CommandController {
     }
 
     @ShellMethod("Generates data based on the model")
-    public String generate(@ShellOption(defaultValue="1") @Positive int factor, boolean clean) {
+    public String generate(@ShellOption(defaultValue="1") @Positive int factor, boolean clean) throws ConfigFileException, ConnectionFailureException {
         if(!fileService.doesFileExist(DISTRIBUTION_MODEL_JSON, MSG_DIST_FOUND, MSG_DIST_NOT_FOUND)) return MSG_DIST_REQUIRED;
-
-        HikariDataSource dataSource = null;
-        ApplyContext context = new ApplyContext(factor, clean);
-
-        try {
-            Config config = configService.loadTargetConfig();
-            final TargetConnectionDao dao = config.setupTargetConnection(generationService, pkDistributionService);
-
-            DistributionModel model = fileService.loadModel(DISTRIBUTION_MODEL_JSON);
-
-            dataSource = dao.toDataSource();
-            List<String> existingTableNames = dao.getAllTables(dataSource).stream().map(Named::getName).collect(Collectors.toList());
-
-            model.getTables().sort(Comparator.comparing(TableData::getOrderOfExecution));
-            context.setTargetConnectionDao(dao);
-
-            DSLContext dsl = using(new DSLConfiguration(dataSource, config.getDbTypeTarget()).getDbConfiguration());
-            context.setDsl(dsl);
-
-            for (TableData table : model.getTables()) {
-                distributionModelService.apply(context.withTable(table, existingTableNames.contains(table.getTableName())));
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-            //configService.loadTargetConfig(true);
-            //return generate();
-            throw new RuntimeException(e);
-        } finally {
-            if(dataSource != null) dataSource.close();
-        }
-
+        DistributionModel model = fileService.loadModel(DISTRIBUTION_MODEL_JSON);
+        Config config = configService.loadTargetConfig();
+        generationService.generateFromModel(model, config, new ApplyContext(factor, clean));
         return MSG_GEN_COMPLETED;
     }
 }
