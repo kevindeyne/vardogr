@@ -11,7 +11,7 @@ It can then run this model and generate data from it, either directly matching t
 
 ## Limitations
 Currently using JOOQ's open source version, which only allows for connecting with open source databases. 
-Only tested with MariaDB and PostgreSQL.
+Only tested with MariaDB, MySQL and PostgreSQL.
 
 ## Commands
 > build 
