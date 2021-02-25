@@ -1,31 +1,24 @@
 package com.kevindeyne.datascrambler.commands;
 
 import com.kevindeyne.datascrambler.dao.SourceConnectionDao;
-import com.kevindeyne.datascrambler.dao.TargetConnectionDao;
 import com.kevindeyne.datascrambler.domain.Config;
 import com.kevindeyne.datascrambler.domain.distributionmodel.DistributionModel;
-import com.kevindeyne.datascrambler.domain.distributionmodel.TableData;
 import com.kevindeyne.datascrambler.exceptions.ConfigFileException;
 import com.kevindeyne.datascrambler.exceptions.ConnectionFailureException;
 import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
 import com.kevindeyne.datascrambler.helper.ApplyContext;
-import com.kevindeyne.datascrambler.helper.DSLConfiguration;
-import com.kevindeyne.datascrambler.service.*;
-import com.zaxxer.hikari.HikariDataSource;
-import org.jooq.DSLContext;
-import org.jooq.Named;
+import com.kevindeyne.datascrambler.service.ConfigService;
+import com.kevindeyne.datascrambler.service.DistributionModelService;
+import com.kevindeyne.datascrambler.service.FileService;
+import com.kevindeyne.datascrambler.service.GenerationService;
 import org.springframework.shell.standard.ShellComponent;
 import org.springframework.shell.standard.ShellMethod;
 import org.springframework.shell.standard.ShellOption;
 
 import javax.annotation.PostConstruct;
 import javax.validation.constraints.Positive;
-import java.util.Comparator;
-import java.util.List;
-import java.util.stream.Collectors;
 
 import static com.kevindeyne.datascrambler.domain.MessageConstants.*;
-import static org.jooq.impl.DSL.using;
 
 @ShellComponent
 public class CommandController {
@@ -40,8 +33,6 @@ public class CommandController {
     public CommandController(ConfigService configService,
                              DistributionModelService distributionModelService,
                              FileService fileService,
-                             GenerationHelperService generationHelperService,
-                             PKDistributionService pkDistributionService,
                              GenerationService generationService) {
         this.configService = configService;
         this.distributionModelService = distributionModelService;
@@ -96,11 +87,11 @@ public class CommandController {
     }
 
     @ShellMethod("Generates data based on the model")
-    public String generate(@ShellOption(defaultValue="1") @Positive int factor, boolean clean) throws ConfigFileException, ConnectionFailureException {
+    public String generate(@ShellOption(defaultValue="1") @Positive int factor, @ShellOption(defaultValue="0") @Positive long fill, boolean clean) throws ConfigFileException, ConnectionFailureException {
         if(!fileService.doesFileExist(DISTRIBUTION_MODEL_JSON, MSG_DIST_FOUND, MSG_DIST_NOT_FOUND)) return MSG_DIST_REQUIRED;
         DistributionModel model = fileService.loadModel(DISTRIBUTION_MODEL_JSON);
         Config config = configService.loadTargetConfig();
-        generationService.generateFromModel(model, config, new ApplyContext(factor, clean));
+        generationService.generateFromModel(model, config, new ApplyContext(factor, fill, clean));
         return MSG_GEN_COMPLETED;
     }
 }

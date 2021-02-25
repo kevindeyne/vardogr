@@ -1,15 +1,14 @@
 package com.kevindeyne.datascrambler.integration;
 
-import com.google.gson.annotations.SerializedName;
 import com.kevindeyne.datascrambler.dao.SourceConnectionDao;
-import com.kevindeyne.datascrambler.dao.TargetConnectionDao;
 import com.kevindeyne.datascrambler.domain.Config;
 import com.kevindeyne.datascrambler.domain.distributionmodel.*;
 import com.kevindeyne.datascrambler.exceptions.ConnectionFailureException;
 import com.kevindeyne.datascrambler.helper.ApplyContext;
 import com.kevindeyne.datascrambler.helper.SupportedDBType;
-import com.kevindeyne.datascrambler.service.*;
-import org.jooq.Field;
+import com.kevindeyne.datascrambler.service.CharacteristicService;
+import com.kevindeyne.datascrambler.service.DistributionModelService;
+import com.kevindeyne.datascrambler.service.GenerationService;
 import org.jooq.SQLDialect;
 import org.jooq.tools.StringUtils;
 import org.junit.Assert;
@@ -81,7 +80,7 @@ public abstract class AbstractDBIntegrationTest {
     }
 
     @Test
-    public void testGeneration() throws ConnectionFailureException, SQLException {
+    public void testGenerationWithFactor() throws ConnectionFailureException, SQLException {
         DistributionModel model = new DistributionModel();
         TableData tableData = new TableData("person");
         tableData.setTotalCount(10);
@@ -102,10 +101,38 @@ public abstract class AbstractDBIntegrationTest {
 
         tableData.setFieldData(Arrays.asList(pk, value));
         model.setTables(Collections.singletonList(tableData));
-        generationService.generateFromModel(model, config, new ApplyContext(2, true));
+        generationService.generateFromModel(model, config, new ApplyContext(2, 0,true));
 
         List<Map<Integer, String>> records = retrieveAllRecords("person");
         Assert.assertEquals(20, records.size());
+    }
+
+    @Test
+    public void testGenerationWithFill() throws ConnectionFailureException, SQLException {
+        DistributionModel model = new DistributionModel();
+        TableData tableData = new TableData("person");
+        tableData.setTotalCount(10);
+        tableData.setOrderOfExecution(1);
+
+        final ValueDistribution valueDistribution = new ValueDistribution();
+        valueDistribution.setPercentages(Collections.singletonMap(20D, new ValueDistribution.MutableInt(5)));
+
+        FieldData pk = new FieldData("id");
+        pk.setPrimaryKey(true);
+        pk.setValueDistribution(valueDistribution);
+        pk.setGenerator(new Generator(0, 10, Integer.class.getName(), "integer", false));
+        pk.setCharacteristics(Collections.singletonList(Characteristics.CAN_BE_POSITIVE_NUMBER.getShortcutValue()));
+
+        FieldData value = new FieldData("value");
+        value.setValueDistribution(valueDistribution);
+        value.setGenerator(new Generator(255, 0, String.class.getName(), "varchar", true));
+
+        tableData.setFieldData(Arrays.asList(pk, value));
+        model.setTables(Collections.singletonList(tableData));
+        generationService.generateFromModel(model, config, new ApplyContext(1, 100,true));
+
+        List<Map<Integer, String>> records = retrieveAllRecords("person");
+        Assert.assertEquals(100, records.size());
     }
 
     protected List<Map<Integer, String>> retrieveAllRecords(String tableName) throws SQLException {
