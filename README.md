@@ -27,6 +27,11 @@ There are two parameters:
 - factor: Allows for scaling the model by a certain factor. Ie: generate --factor 2 will generate data 2x the size of the production data.
 - clean: By default, the generation 'appends'. Ie if a production table contains 100 records and the same table contains 25 records in test, by default it will only add 75 new records. By explicitly defining the clean option, it will trunctate the data first and create 100 brand new records.
 
+Alternatively, you can also use:
+>generate --fill 3000
+
+This also takes a distribution model and applies it to a lower environment database. It will ask for credentials which require write access.
+- fill: Allows for scaling the model up to a certain record number. Ie: generate --fill 100 will generate data up to 100 records. If you already have data, those keep existing. You can use --clean to ensure it truncates data in the table before new data is added.
 
 > help
 
