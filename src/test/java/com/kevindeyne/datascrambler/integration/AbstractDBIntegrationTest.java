@@ -17,6 +17,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
+import java.security.SecureRandom;
 import java.sql.*;
 import java.util.*;
 
@@ -133,6 +134,51 @@ public abstract class AbstractDBIntegrationTest {
 
         List<Map<Integer, String>> records = retrieveAllRecords("person");
         Assert.assertEquals(100, records.size());
+    }
+
+    @Test
+    public void testGenerationWithFillFromEmptyModel() throws ConnectionFailureException, SQLException {
+        DistributionModel model = new DistributionModel();
+        TableData tableData = new TableData("person");
+        tableData.setTotalCount(0);
+        tableData.setOrderOfExecution(1);
+
+        FieldData pk = new FieldData("id");
+        pk.setPrimaryKey(true);
+        pk.setValueDistribution(null);
+        pk.setGenerator(new Generator(0, 10, Integer.class.getName(), "integer", false));
+        pk.setCharacteristics(Collections.singletonList(Characteristics.CAN_BE_POSITIVE_NUMBER.getShortcutValue()));
+
+        FieldData value = new FieldData("value");
+        value.setValueDistribution(null);
+        value.setGenerator(new Generator(255, 0, String.class.getName(), "varchar", true));
+
+        tableData.setFieldData(Arrays.asList(pk, value));
+        model.setTables(Collections.singletonList(tableData));
+        generationService.generateFromModel(model, config, new ApplyContext(1, 150,true));
+
+        List<Map<Integer, String>> records = retrieveAllRecords("person");
+        Assert.assertEquals(150, records.size());
+
+        String randomValue1 = records.get(new SecureRandom().nextInt(records.size())).values().toArray()[0].toString();
+        String randomValue2 = records.get(new SecureRandom().nextInt(records.size())).values().toArray()[0].toString();
+        String randomValue3 = records.get(new SecureRandom().nextInt(records.size())).values().toArray()[0].toString();
+        String randomValue4 = records.get(new SecureRandom().nextInt(records.size())).values().toArray()[0].toString();
+        String randomValue5 = records.get(new SecureRandom().nextInt(records.size())).values().toArray()[0].toString();
+
+        Assert.assertNotEquals(randomValue1, randomValue2);
+        Assert.assertNotEquals(randomValue1, randomValue3);
+        Assert.assertNotEquals(randomValue1, randomValue4);
+        Assert.assertNotEquals(randomValue1, randomValue5);
+
+        Assert.assertNotEquals(randomValue2, randomValue3);
+        Assert.assertNotEquals(randomValue2, randomValue4);
+        Assert.assertNotEquals(randomValue2, randomValue5);
+
+        Assert.assertNotEquals(randomValue3, randomValue4);
+        Assert.assertNotEquals(randomValue3, randomValue5);
+
+        Assert.assertNotEquals(randomValue4, randomValue5);
     }
 
     protected List<Map<Integer, String>> retrieveAllRecords(String tableName) throws SQLException {

@@ -117,7 +117,7 @@ public class TargetConnectionDao {
         });
     }
 
-    public void pushData(DSLContext dsl, TableData table, boolean clean) {
+    public void pushData(DSLContext dsl, TableData table, boolean clean, long fillCount) {
         List<Field<?>> fields = new ArrayList<>();
 
         long total = table.getTotalCount();
@@ -151,7 +151,7 @@ public class TargetConnectionDao {
                         } else {
                             Long skipListValue = skipList.get(fieldName);
                             if (skipListValue == null) {
-                                Double percentage = determineActivePercentage(percentagesHandled, field);
+                                Double percentage = determineActivePercentage(percentagesHandled, field, fillCount);
 
                                 long skipTo = calculateSkipTo(total, i, percentage);
                                 skipList.put(fieldName, skipTo);
@@ -224,10 +224,12 @@ public class TargetConnectionDao {
         return skipTo;
     }
 
-    private Double determineActivePercentage(Map<String, Map<Double, ValueDistribution.MutableInt>> percentagesHandledPerField, FieldData field) {
+    private Double determineActivePercentage(Map<String, Map<Double, ValueDistribution.MutableInt>> percentagesHandledPerField, FieldData field, long fillCount) {
         percentagesHandledPerField.computeIfAbsent(field.getFieldName(), k -> new HashMap<>());
         Map<Double, ValueDistribution.MutableInt> percentagesHandled = percentagesHandledPerField.get(field.getFieldName());
-        final Map<Double, ValueDistribution.MutableInt> percentages = field.getValueDistribution().getPercentages();
+        ValueDistribution valueDistribution = field.getValueDistribution();
+        if(valueDistribution == null || valueDistribution.getPercentages().isEmpty()) valueDistribution = defaultValueDistribution(fillCount);
+        final Map<Double, ValueDistribution.MutableInt> percentages = valueDistribution.getPercentages();
         Double percentage = null;
         for (Double percentageToPossiblyHandle : percentages.keySet()) {
             if (!percentagesHandled.containsKey(percentageToPossiblyHandle)) {
@@ -244,6 +246,13 @@ public class TargetConnectionDao {
             return 0.0001D; //could probably introduce a percentage cleanup round after determining them too; but this will do for now. This happens because we round during persistence of model
         }
         return percentage;
+    }
+
+    //by default - as much distribution as possible
+    private ValueDistribution defaultValueDistribution(long fillCount) {
+        ValueDistribution distribution = new ValueDistribution();
+        distribution.setPercentages(Collections.singletonMap(1D/fillCount*100D, new ValueDistribution.MutableInt(fillCount)));
+        return distribution;
     }
 
     private Object generateNewDataField(FieldData field) {

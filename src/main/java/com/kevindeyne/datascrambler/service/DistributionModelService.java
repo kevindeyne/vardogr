@@ -212,7 +212,7 @@ public class DistributionModelService {
             dao.validateTable(dsl, table);
         }
         if(context.isClean()) dao.truncate(dsl, table.getTableName());
-        dao.pushData(dsl, table, context.isClean());
+        dao.pushData(dsl, table, context.isClean(), context.getFill());
         dao.createIndexes(dsl, table);
         table.setFieldData(null);
         System.gc(); //Actually helps keep memory usage relatively low; after every table is handled we can clear a whole chunk of memory - otherwise builds up quite a lot

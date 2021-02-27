@@ -23,9 +23,9 @@ public class ValueDistribution {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class MutableInt {
-        private int v = 1;
+        private long v = 1;
         public MutableInt increment () { ++v; return this; }
-        public int get() { return v; }
+        public long get() { return v; }
     }
 
     public ValueDistribution from(Result<? extends Record2<?, Integer>> rawDistribution, long totalCount) {
