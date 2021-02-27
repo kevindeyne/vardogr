@@ -87,7 +87,11 @@
 	<p class="command">generate <span class="optional">--factor 2</span> <span class="optional">--clean</span></p>
 	<p>This takes a distribution model and applies it to a lower environment database. It will ask for credentials which require write access.</p>
 	<p><span class="optional">--factor [number]</span> Optional: Scaling the model by a certain factor. For example: generate --factor 2 will generate data 2x the size of the production data. <i>Defaults to 1</i></p>
+	<p><span class="optional">--fill [number]</span> Optional: Scaling the model up to a certain record count. For example: generate --fill 3000 will generate data up to 3000 records.</p>
 	<p><span class="optional">--clean</span> Optional: Causes to truncate tables and then generate data. Without this parameter, the tool simply 'appends'.</p><p>As a concrete example: If the production table contains 10 records, and the test database contains 3 records, then calling this without the clean parameter will cause it to append 7 new records. With the clean parameter, the test table will be truncated to 0 records and then 10 new records would be created.</p>
+	
+	
+	
 	
 	<h2>How to run</h2>
 	<p>Vardøgr comes as an executable jar. You need to have Java installed.</p>
