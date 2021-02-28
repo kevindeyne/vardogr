@@ -20,6 +20,9 @@ import org.testcontainers.containers.JdbcDatabaseContainer;
 import java.security.SecureRandom;
 import java.sql.*;
 import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public abstract class AbstractDBIntegrationTest {
 
@@ -160,11 +163,17 @@ public abstract class AbstractDBIntegrationTest {
         List<Map<Integer, String>> records = retrieveAllRecords("person");
         Assert.assertEquals(150, records.size());
 
-        String randomValue1 = records.get(new SecureRandom().nextInt(records.size())).values().toArray()[0].toString();
-        String randomValue2 = records.get(new SecureRandom().nextInt(records.size())).values().toArray()[0].toString();
-        String randomValue3 = records.get(new SecureRandom().nextInt(records.size())).values().toArray()[0].toString();
-        String randomValue4 = records.get(new SecureRandom().nextInt(records.size())).values().toArray()[0].toString();
-        String randomValue5 = records.get(new SecureRandom().nextInt(records.size())).values().toArray()[0].toString();
+        List<Integer> uniqueValues = ThreadLocalRandom.current()
+                .ints(0, 100)
+                .distinct()
+                .limit(5)
+                .boxed()
+                .collect(Collectors.toCollection(ArrayList::new));
+        String randomValue1 = records.get(uniqueValues.get(0)).values().toArray()[0].toString();
+        String randomValue2 = records.get(uniqueValues.get(1)).values().toArray()[0].toString();
+        String randomValue3 = records.get(uniqueValues.get(2)).values().toArray()[0].toString();
+        String randomValue4 = records.get(uniqueValues.get(3)).values().toArray()[0].toString();
+        String randomValue5 = records.get(uniqueValues.get(4)).values().toArray()[0].toString();
 
         Assert.assertNotEquals(randomValue1, randomValue2);
         Assert.assertNotEquals(randomValue1, randomValue3);
