@@ -65,7 +65,7 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
 		<dependency>
 			<groupId>com.github.oshi</groupId>
 			<artifactId>oshi-core</artifactId>
-			<version>5.7.4</version>
+			<version>5.8.0</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.code.gson</groupId>
