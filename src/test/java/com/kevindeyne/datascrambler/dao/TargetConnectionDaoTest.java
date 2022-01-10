@@ -13,8 +13,8 @@ import org.jooq.conf.Settings;
 import org.jooq.impl.DSL;
 import org.jooq.tools.jdbc.MockConnection;
 import org.jooq.tools.jdbc.MockDataProvider;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
@@ -23,9 +23,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.UUID;
 
-import static org.mockito.Matchers.*;
+import static org.mockito.ArgumentMatchers.*;
 
-public class TargetConnectionDaoTest {
+class TargetConnectionDaoTest {
 
     private TargetConnectionDao dao;
 
@@ -35,14 +35,14 @@ public class TargetConnectionDaoTest {
     @Mock
     private PKDistributionService pkDistributionService;
 
-    @Before
+    @BeforeEach
     public void init() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
         dao = new TargetConnectionDao("", "", "", generationHelperService, pkDistributionService);
     }
 
     @Test
-    public void testWithOneField50Distribution() {
+    void testWithOneField50Distribution() {
         MockDataProvider provider = new MockProvider();
         MockConnection connection = new MockConnection(provider);
         Settings settings = new Settings();

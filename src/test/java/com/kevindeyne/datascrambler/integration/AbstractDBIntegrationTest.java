@@ -11,18 +11,16 @@ import com.kevindeyne.datascrambler.service.DistributionModelService;
 import com.kevindeyne.datascrambler.service.GenerationService;
 import org.jooq.SQLDialect;
 import org.jooq.tools.StringUtils;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.JdbcDatabaseContainer;
 
-import java.security.SecureRandom;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public abstract class AbstractDBIntegrationTest {
 
@@ -31,8 +29,9 @@ public abstract class AbstractDBIntegrationTest {
     protected GenerationService generationService;
     private Config config;
 
-    @Before
-    public void init() {
+    @BeforeEach
+    void init() {
+        getDB().start();
         distributionModelService = new DistributionModelService(new CharacteristicService());
         sourceConnectionDao = new SourceConnectionDao(getDB().getJdbcUrl(), getDB().getUsername(), getDB().getPassword(), getDialect());
         generationService = new GenerationService(distributionModelService);
@@ -44,13 +43,13 @@ public abstract class AbstractDBIntegrationTest {
     protected abstract SupportedDBType getDBType();
 
     @Test
-    @Ignore
-    public void testConnectionToContainer() throws SQLException {
-        Assert.assertTrue(sourceConnectionDao.testConnection());
+    @Disabled
+    void testConnectionToContainer() throws SQLException {
+        Assertions.assertTrue(sourceConnectionDao.testConnection());
     }
 
     @Test
-    public void testBuild() throws Exception {
+    void testBuild() throws Exception {
         createTable("test_123");
         createTable( "person");
         createTable("an_empty_table");
@@ -58,20 +57,20 @@ public abstract class AbstractDBIntegrationTest {
         insertRandomData(5, "person");
 
         DistributionModel model = distributionModelService.create(sourceConnectionDao, sourceConnectionDao.determineSchemaDynamically());
-        Assert.assertNotNull(model);
+        Assertions.assertNotNull(model);
 
-        Assert.assertEquals(3, model.getTables().size());
-        Assert.assertEquals(0, findTableInModel(model, "an_empty_table").getTotalCount());
+        Assertions.assertEquals(3, model.getTables().size());
+        Assertions.assertEquals(0, findTableInModel(model, "an_empty_table").getTotalCount());
         final TableData person = findTableInModel(model, "person");
-        Assert.assertEquals(5, person.getTotalCount());
-        Assert.assertEquals(3, person.getFieldData().size());
+        Assertions.assertEquals(5, person.getTotalCount());
+        Assertions.assertEquals(3, person.getFieldData().size());
 
 
         for(FieldData data : person.getFieldData()) {
-            Assert.assertNotNull(data.getFieldName());
-            Assert.assertNotNull(data.getGenerator());
-            Assert.assertEquals(1, data.getValueDistribution().getPercentages().size());
-            Assert.assertNotNull(data.getValueDistribution().getPercentages().get(20.0D)); //since random and 5 records (=100%), each record represents a diff value, so 20% distribution of values - each record is diff
+            Assertions.assertNotNull(data.getFieldName());
+            Assertions.assertNotNull(data.getGenerator());
+            Assertions.assertEquals(1, data.getValueDistribution().getPercentages().size());
+            Assertions.assertNotNull(data.getValueDistribution().getPercentages().get(20.0D)); //since random and 5 records (=100%), each record represents a diff value, so 20% distribution of values - each record is diff
             System.out.println(data.getFieldName() + ": " + data.getValueDistribution().getPercentages().get(20D) );
         }
 
@@ -84,7 +83,7 @@ public abstract class AbstractDBIntegrationTest {
     }
 
     @Test
-    public void testGenerationWithFactor() throws ConnectionFailureException, SQLException {
+    void testGenerationWithFactor() throws ConnectionFailureException, SQLException {
         DistributionModel model = new DistributionModel();
         TableData tableData = new TableData("person");
         tableData.setTotalCount(10);
@@ -108,11 +107,11 @@ public abstract class AbstractDBIntegrationTest {
         generationService.generateFromModel(model, config, new ApplyContext(2, 0,true));
 
         List<Map<Integer, String>> records = retrieveAllRecords("person");
-        Assert.assertEquals(20, records.size());
+        Assertions.assertEquals(20, records.size());
     }
 
     @Test
-    public void testGenerationWithFill() throws ConnectionFailureException, SQLException {
+    void testGenerationWithFill() throws ConnectionFailureException, SQLException {
         DistributionModel model = new DistributionModel();
         TableData tableData = new TableData("person");
         tableData.setTotalCount(10);
@@ -136,11 +135,11 @@ public abstract class AbstractDBIntegrationTest {
         generationService.generateFromModel(model, config, new ApplyContext(1, 100,true));
 
         List<Map<Integer, String>> records = retrieveAllRecords("person");
-        Assert.assertEquals(100, records.size());
+        Assertions.assertEquals(100, records.size());
     }
 
     @Test
-    public void testGenerationWithFillFromEmptyModel() throws ConnectionFailureException, SQLException {
+    void testGenerationWithFillFromEmptyModel() throws ConnectionFailureException, SQLException {
         DistributionModel model = new DistributionModel();
         TableData tableData = new TableData("person");
         tableData.setTotalCount(0);
@@ -161,7 +160,7 @@ public abstract class AbstractDBIntegrationTest {
         generationService.generateFromModel(model, config, new ApplyContext(1, 150,true));
 
         List<Map<Integer, String>> records = retrieveAllRecords("person");
-        Assert.assertEquals(150, records.size());
+        Assertions.assertEquals(150, records.size());
 
         List<Integer> uniqueValues = ThreadLocalRandom.current()
                 .ints(0, 100)
@@ -175,19 +174,19 @@ public abstract class AbstractDBIntegrationTest {
         String randomValue4 = records.get(uniqueValues.get(3)).values().toArray()[0].toString();
         String randomValue5 = records.get(uniqueValues.get(4)).values().toArray()[0].toString();
 
-        Assert.assertNotEquals(randomValue1, randomValue2);
-        Assert.assertNotEquals(randomValue1, randomValue3);
-        Assert.assertNotEquals(randomValue1, randomValue4);
-        Assert.assertNotEquals(randomValue1, randomValue5);
+        Assertions.assertNotEquals(randomValue1, randomValue2);
+        Assertions.assertNotEquals(randomValue1, randomValue3);
+        Assertions.assertNotEquals(randomValue1, randomValue4);
+        Assertions.assertNotEquals(randomValue1, randomValue5);
 
-        Assert.assertNotEquals(randomValue2, randomValue3);
-        Assert.assertNotEquals(randomValue2, randomValue4);
-        Assert.assertNotEquals(randomValue2, randomValue5);
+        Assertions.assertNotEquals(randomValue2, randomValue3);
+        Assertions.assertNotEquals(randomValue2, randomValue4);
+        Assertions.assertNotEquals(randomValue2, randomValue5);
 
-        Assert.assertNotEquals(randomValue3, randomValue4);
-        Assert.assertNotEquals(randomValue3, randomValue5);
+        Assertions.assertNotEquals(randomValue3, randomValue4);
+        Assertions.assertNotEquals(randomValue3, randomValue5);
 
-        Assert.assertNotEquals(randomValue4, randomValue5);
+        Assertions.assertNotEquals(randomValue4, randomValue5);
     }
 
     protected List<Map<Integer, String>> retrieveAllRecords(String tableName) throws SQLException {

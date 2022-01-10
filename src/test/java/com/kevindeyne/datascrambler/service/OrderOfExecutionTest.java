@@ -1,13 +1,16 @@
 package com.kevindeyne.datascrambler.service;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.jooq.Comparator;
 import org.jooq.*;
+import org.jooq.Record;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.CustomRecord;
 import org.jooq.impl.CustomTable;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
 import java.util.*;
@@ -15,22 +18,17 @@ import java.util.function.Function;
 
 import static org.jooq.impl.DSL.quotedName;
 
-public class OrderOfExecutionTest {
+class OrderOfExecutionTest {
 
     private DistributionModelService service;
 
-    @Before
-    public void init() {
+    @BeforeEach
+    void init() {
         service = new DistributionModelService(new CharacteristicService());
     }
 
     @Test
-    public void testOrderOfExecutionNoFKs() {
-
-    }
-
-    @Test
-    public void testOrderOfExecutionStackedToOne() {
+    void testOrderOfExecutionStackedToOne() {
         List<Table<?>> tables = new ArrayList<>();
 
         final ExampleTable user = new ExampleTable("user");
@@ -49,14 +47,14 @@ public class OrderOfExecutionTest {
         tables.add(user);
 
         List<String> map = service.determineOrderOfExecution(tables);
-        Assert.assertNotNull(map);
-        Assert.assertEquals(map.size(), tables.size());
+        Assertions.assertNotNull(map);
+        Assertions.assertEquals(map.size(), tables.size());
 
-        Assert.assertTrue(map.indexOf("user") < map.indexOf("actionlog"));
+        Assertions.assertTrue(map.indexOf("user") < map.indexOf("actionlog"));
     }
 
     @Test
-    public void testOrderOfExecutionStandard() {
+    void testOrderOfExecutionStandard() {
         List<Table<?>> tables = new ArrayList<>();
 
         final ExampleTable address = new ExampleTable("address");
@@ -74,16 +72,16 @@ public class OrderOfExecutionTest {
         tables.add(library);
 
         List<String> map = service.determineOrderOfExecution(tables);
-        Assert.assertNotNull(map);
-        Assert.assertEquals(map.size(), tables.size());
+        Assertions.assertNotNull(map);
+        Assertions.assertEquals(map.size(), tables.size());
 
-        Assert.assertTrue(map.indexOf("address") < map.indexOf("person"));
-        Assert.assertTrue(map.indexOf("person") < map.indexOf("book"));
-        Assert.assertTrue(map.indexOf("book") < map.indexOf("library"));
+        Assertions.assertTrue(map.indexOf("address") < map.indexOf("person"));
+        Assertions.assertTrue(map.indexOf("person") < map.indexOf("book"));
+        Assertions.assertTrue(map.indexOf("book") < map.indexOf("library"));
     }
 
     @Test
-    public void testOrderOfExecutionComplex() {
+    void testOrderOfExecutionComplex() {
         List<Table<?>> tables = new ArrayList<>();
 
         final ExampleTable actor = new ExampleTable("actor");
@@ -154,10 +152,10 @@ public class OrderOfExecutionTest {
         tables.add(actor);
 
         List<String> map = service.determineOrderOfExecution(tables);
-        Assert.assertNotNull(map);
-        Assert.assertEquals(map.size(), tables.size());
+        Assertions.assertNotNull(map);
+        Assertions.assertEquals(map.size(), tables.size());
 
-        Assert.assertTrue(map.indexOf("city") < map.indexOf("address"));
+        Assertions.assertTrue(map.indexOf("city") < map.indexOf("address"));
     }
 
     //IGNORE - test classes
@@ -179,7 +177,7 @@ public class OrderOfExecutionTest {
             return foreignKeys;
         }
 
-        public void add(String internalField, String foreignTable, String foreignField) {
+        void add(String internalField, String foreignTable, String foreignField) {
             ForeignKey<ExampleRecord, ?> key = new ForeignKey<ExampleRecord, ExampleRecord>() {
                 @Override
                 public UniqueKey<ExampleRecord> getKey() {
@@ -479,6 +477,41 @@ public class OrderOfExecutionTest {
         @Override
         public boolean equals(Object o) {
             return false;
+        }
+
+        @Override
+        public @NotNull <U> Field<U> convert(Binding<ExampleTable, U> binding) {
+            return null;
+        }
+
+        @Override
+        public @NotNull <U> Field<U> convert(Converter<ExampleTable, U> converter) {
+            return null;
+        }
+
+        @Override
+        public @NotNull <U> Field<U> convert(Class<U> aClass, Function<? super ExampleTable, ? extends U> function, Function<? super U, ? extends ExampleTable> function1) {
+            return null;
+        }
+
+        @Override
+        public @NotNull <U> Field<U> convertFrom(Class<U> aClass, Function<? super ExampleTable, ? extends U> function) {
+            return null;
+        }
+
+        @Override
+        public @NotNull <U> Field<U> convertFrom(Function<? super ExampleTable, ? extends U> function) {
+            return null;
+        }
+
+        @Override
+        public @NotNull <U> Field<U> convertTo(Class<U> aClass, Function<? super U, ? extends ExampleTable> function) {
+            return null;
+        }
+
+        @Override
+        public @NotNull <U> Field<U> convertTo(Function<? super U, ? extends ExampleTable> function) {
+            return null;
         }
 
         @Override
@@ -2062,27 +2095,27 @@ public class OrderOfExecutionTest {
         }
 
         @Override
-        public Field<ExampleTable> field(Record record) {
+        public @Nullable Field<ExampleTable> field(org.jooq.Record record) {
             return null;
         }
 
         @Override
-        public ExampleTable get(Record record) {
+        public @Nullable ExampleTable get(org.jooq.Record record) {
             return null;
         }
 
         @Override
-        public ExampleTable getValue(Record record) {
+        public @Nullable ExampleTable getValue(org.jooq.Record record) {
             return null;
         }
 
         @Override
-        public ExampleTable original(Record record) {
+        public @Nullable ExampleTable original(org.jooq.Record record) {
             return null;
         }
 
         @Override
-        public boolean changed(Record record) {
+        public boolean changed(org.jooq.Record record) {
             return false;
         }
 
@@ -2092,7 +2125,7 @@ public class OrderOfExecutionTest {
         }
 
         @Override
-        public Record1<ExampleTable> from(Record record) {
+        public @Nullable Record1<ExampleTable> from(org.jooq.Record record) {
             return null;
         }
 

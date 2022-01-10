@@ -1,30 +1,27 @@
 package com.kevindeyne.datascrambler.service;
 
-import com.kevindeyne.datascrambler.service.EncryptService;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotSame;
-
-public class EncryptionTest {
+class EncryptionTest {
 
     private EncryptService service;
 
-    @Before
+    @BeforeEach
     public void init() {
         service = new EncryptService();
     }
 
     @Test
-    public void testEncryption() {
+    void testEncryption() {
         String privateData = "secret-data";
 
         String myEncryptedText = service.encrypt(privateData);
         System.out.println(myEncryptedText);
-        assertNotSame(privateData, myEncryptedText);
+        Assertions.assertNotSame(privateData, myEncryptedText);
 
         String plainText = service.decrypt(myEncryptedText);
-        assertEquals(plainText, privateData);
+        Assertions.assertEquals(plainText, privateData);
     }
 }

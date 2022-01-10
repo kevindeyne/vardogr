@@ -1,21 +1,21 @@
 package com.kevindeyne.datascrambler.domain.distributionmodel;
 
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.util.HashSet;
 import java.util.Set;
 
-public class CharacteristicsTest {
+class CharacteristicsTest {
 
     @Test
-    public void ensureUniqueShortcuts() {
+    void ensureUniqueShortcuts() {
         Set<String> shortcuts = new HashSet<>();
         for(Characteristics c : Characteristics.values()) {
             shortcuts.add(c.getShortcutValue());
-            Assert.assertEquals(c, Characteristics.findByShortcut(c.getShortcutValue()));
+            Assertions.assertEquals(c, Characteristics.findByShortcut(c.getShortcutValue()));
         }
-        Assert.assertEquals(Characteristics.values().length, shortcuts.size());
+        Assertions.assertEquals(Characteristics.values().length, shortcuts.size());
     }
 
 }

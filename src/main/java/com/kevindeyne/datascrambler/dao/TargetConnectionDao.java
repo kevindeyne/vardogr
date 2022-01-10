@@ -8,6 +8,7 @@ import com.zaxxer.hikari.HikariDataSource;
 import lombok.Data;
 import me.tongfei.progressbar.ProgressBar;
 import org.jooq.*;
+import org.jooq.Record;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
 import org.jooq.impl.DefaultConfiguration;

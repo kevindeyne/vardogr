@@ -2,20 +2,20 @@ package com.kevindeyne.datascrambler.service;
 
 import com.kevindeyne.datascrambler.domain.distributionmodel.FieldData;
 import com.kevindeyne.datascrambler.domain.distributionmodel.ForeignKeyData;
-import org.junit.Assert;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Test;
 
 import java.security.SecureRandom;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-public class PKDistributionTest {
+class PKDistributionTest {
 
-    private PKDistributionService service = new PKDistributionService();
+    private final PKDistributionService service = new PKDistributionService();
 
     @Test
-    public void testDistributionComboPKAsFK_1field() {
+    void testDistributionComboPKAsFK_1field() {
         List<FieldData> fieldData = new ArrayList<>();
 
         FieldData f1 = new FieldData("actor_id");
@@ -28,15 +28,15 @@ public class PKDistributionTest {
         final List<Map<String, Object>> pks = service.generatePrimaryKey(fieldData, 3);
         pks.forEach(System.out::println);
 
-        Assert.assertEquals(3, pks.size());
+        Assertions.assertEquals(3, pks.size());
         for(Map<String, Object> key : pks) {
-            Assert.assertFalse(isInteger(key.get("actor_id").toString()));
-            Assert.assertEquals(1, key.size());
+            Assertions.assertFalse(isInteger(key.get("actor_id").toString()));
+            Assertions.assertEquals(1, key.size());
         }
     }
 
     @Test
-    public void testDistributionComboPKAsFK_2fields() {
+    void testDistributionComboPKAsFK_2fields() {
         List<FieldData> fieldData = new ArrayList<>();
 
         FieldData f1 = new FieldData("actor_id");
@@ -56,16 +56,16 @@ public class PKDistributionTest {
         final List<Map<String, Object>> pks = service.generatePrimaryKey(fieldData, 5);
         pks.forEach(System.out::println);
 
-        Assert.assertEquals(5, pks.size());
+        Assertions.assertEquals(5, pks.size());
         for(Map<String, Object> key : pks) {
-            Assert.assertFalse(isInteger(key.get("actor_id").toString()));
-            Assert.assertTrue(isInteger(key.get("film_id").toString()));
-            Assert.assertEquals(2, key.size());
+            Assertions.assertFalse(isInteger(key.get("actor_id").toString()));
+            Assertions.assertTrue(isInteger(key.get("film_id").toString()));
+            Assertions.assertEquals(2, key.size());
         }
     }
 
     @Test
-    public void testDistributionComboPKAsFK_2fields_nolimit() {
+    void testDistributionComboPKAsFK_2fields_nolimit() {
         List<FieldData> fieldData = new ArrayList<>();
 
         FieldData f1 = new FieldData("actor_id");
@@ -85,16 +85,16 @@ public class PKDistributionTest {
         final List<Map<String, Object>> pks = service.generatePrimaryKey(fieldData, 5000);
         pks.forEach(System.out::println);
 
-        Assert.assertEquals(15, pks.size());
+        Assertions.assertEquals(15, pks.size());
         for(Map<String, Object> key : pks) {
-            Assert.assertFalse(isInteger(key.get("actor_id").toString()));
-            Assert.assertTrue(isInteger(key.get("film_id").toString()));
-            Assert.assertEquals(2, key.size());
+            Assertions.assertFalse(isInteger(key.get("actor_id").toString()));
+            Assertions.assertTrue(isInteger(key.get("film_id").toString()));
+            Assertions.assertEquals(2, key.size());
         }
     }
 
     @Test
-    public void testDistributionComboPKAsFK_3fields() {
+    void testDistributionComboPKAsFK_3fields() {
         List<FieldData> fieldData = new ArrayList<>();
 
         FieldData f2 = new FieldData("film_id");
@@ -121,17 +121,17 @@ public class PKDistributionTest {
         final List<Map<String, Object>> pks = service.generatePrimaryKey(fieldData, 10);
         pks.forEach(System.out::println);
 
-        Assert.assertEquals(10, pks.size());
+        Assertions.assertEquals(10, pks.size());
         for(Map<String, Object> key : pks) {
-            Assert.assertFalse(isInteger(key.get("otherID").toString()));
-            Assert.assertFalse(isInteger(key.get("actor_id").toString()));
-            Assert.assertTrue(isInteger(key.get("film_id").toString()));
-            Assert.assertEquals(3, key.size());
+            Assertions.assertFalse(isInteger(key.get("otherID").toString()));
+            Assertions.assertFalse(isInteger(key.get("actor_id").toString()));
+            Assertions.assertTrue(isInteger(key.get("film_id").toString()));
+            Assertions.assertEquals(3, key.size());
         }
     }
 
     @Test
-    public void testDistributionComboPKAsFK_3fields_massive() {
+    void testDistributionComboPKAsFK_3fields_massive() {
         List<FieldData> fieldData = new ArrayList<>();
 
         Set<Object> fkList = new HashSet<>();

@@ -4,26 +4,23 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.jooq.DataType;
 import org.jooq.impl.SQLDataType;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 
-public class SerializationTest {
+class SerializationTest {
 
-    private Gson gson = new GsonBuilder().create();
+    private final Gson gson = new GsonBuilder().create();
 
     @Test
-    public void testSerializeDataType() {
+    void testSerializeDataType() {
         DataType<?> dataType = SQLDataType.INTEGER;
-
-
-
 
         System.out.println(dataType.getTypeName());
     }
 
     @Test
-    public void testMe() {
+    void testMe() {
         String[] x = Arrays.asList("test", "another test", "something").toArray(new String[0]);
         System.out.println(x[0]);
         System.out.println(x[1]);

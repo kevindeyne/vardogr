@@ -1,38 +1,35 @@
 package com.kevindeyne.datascrambler.service;
 
 import com.kevindeyne.datascrambler.domain.distributionmodel.FieldData;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import java.io.FileNotFoundException;
 import java.util.Random;
 
-public class GenerationHelperServiceTest {
+class GenerationHelperServiceTest {
 
     private GenerationHelperService generationHelperService;
 
-    @Before
-    public void init() {
+    @BeforeEach
+    void init() {
         generationHelperService = new GenerationHelperService();
     }
 
     @Test
-    public void testGenerateString() {
+    void testGenerateString() {
         int maxLength = new Random().nextInt(53);
         FieldData field = new FieldData("firstName");
         String stringData = (String) generationHelperService.generate(String.class.getName(), maxLength, field);
-        Assert.assertNotNull(stringData);
-        Assert.assertTrue(stringData.length() <= maxLength);
+        Assertions.assertNotNull(stringData);
+        Assertions.assertTrue(stringData.length() <= maxLength);
         System.out.println(stringData);
     }
 
     @Test
-    public void test() throws FileNotFoundException {
+    void test() {
         String string = generationHelperService.randomName();
         System.out.println(string);
     }
-    //java.lang.Integer
-    //java.sql.Date
 
 }
