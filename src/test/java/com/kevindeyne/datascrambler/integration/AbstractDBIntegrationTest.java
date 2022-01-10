@@ -211,7 +211,12 @@ public abstract class AbstractDBIntegrationTest {
     private void createTable(String tableName) throws Exception {
         Connection connection = DriverManager.getConnection(getDB().getJdbcUrl(), getDB().getUsername(), getDB().getPassword());
         Statement stmt = connection.createStatement();
-        stmt.executeUpdate("CREATE TABLE " + tableName + " (id int not null primary key, value_1 varchar(255), value_2 INT)");
+        if("MYSQL".equals(getDBType().toString())) {
+            stmt.executeUpdate("CREATE TABLE " + tableName + " (id INT NOT NULL AUTO_INCREMENT, value_1 VARCHAR(255), value_2 INT, PRIMARY KEY ( id ))");
+        } else {
+            stmt.executeUpdate("CREATE TABLE " + tableName + " (id int not null primary key, value_1 varchar(255), value_2 INT)");
+        }
+
         stmt.close();
         connection.close();
     }

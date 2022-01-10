@@ -18,7 +18,6 @@ import java.sql.Statement;
 import java.sql.*;
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 import static org.jooq.impl.DSL.*;
 
@@ -51,25 +50,39 @@ public class SourceConnectionDao {
         final Optional<Schema> optionalSchema = dsl.meta().getSchemas().stream()
                 .filter(s -> s.getName().equals(schemaName))
                 .findFirst();
-        if (!optionalSchema.isPresent()) {
+        if (optionalSchema.isEmpty()) {
             Optional<Schema> suggestion = dsl.meta().getSchemas().stream().filter(s -> s.getName().startsWith(schemaName.substring(0, 1))).findFirst();
-            if (!suggestion.isPresent()) suggestion = dsl.meta().getSchemas().stream().findFirst();
-            if (suggestion.isPresent())
-                throw new RuntimeException("Schema '" + schemaName + "' is invalid. Did you mean: '" + suggestion.get().getName() + "'?");
+            if (suggestion.isEmpty()) suggestion = dsl.meta().getSchemas().stream().findFirst();
+            if (suggestion.isPresent()) throw new RuntimeException("Schema '" + schemaName + "' is invalid. Did you mean: '" + suggestion.get().getName() + "'?");
             throw new RuntimeException("Schema '" + schemaName + "' is invalid. No schemas found.");
         }
         final List<Table<?>> tables = dsl.meta(optionalSchema.get()).getTables();
         return tables.stream()
-                .filter(t -> TableOptions.TableType.TABLE.equals(t.getOptions().type()) && t.fields().length > 0)
-                .collect(Collectors.toList());
+                .filter(t -> TableOptions.TableType.TABLE.equals(t.getOptions().type()) && exists(t, dsl))
+                .toList();
+    }
 
+    public boolean exists(Table<?> table, DSLContext dsl) {
+        try {
+            dsl
+                .selectCount()
+                .from(table.getName())
+                .fetchOne(0, long.class);
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public Long count(String tableName, DSLContext dsl) {
-        return dsl
-                .selectCount()
-                .from(table(quotedName(tableName)))
-                .fetchOne(0, long.class);
+        try {
+            return dsl
+                    .selectCount()
+                    .from(table(quotedName(tableName)))
+                    .fetchOne(0, long.class);
+        } catch (Exception e) {
+            return 0L;
+        }
     }
 
     public ValueDistribution determineDistribution(Table<?> table, Field<?> field, long totalCount, DSLContext dsl) {

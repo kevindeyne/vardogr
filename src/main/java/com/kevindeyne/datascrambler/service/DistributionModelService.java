@@ -10,7 +10,6 @@ import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.zaxxer.hikari.HikariDataSource;
 import me.tongfei.progressbar.ProgressBar;
 import org.jooq.*;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -51,8 +50,8 @@ public class DistributionModelService {
                         tableData.setTotalCount(sourceConnectionDao.count(tableData.getTableName(), dsl));
                         tableData.setOrderOfExecution(orderOfExecutionList.indexOf(tableData.getTableName()));
                         List<String> primaryKeys = determinePrimaryKeys(table);
-
-                        Arrays.stream(table.fields()).forEach(f -> {
+                        final Field<?>[] fields = dsl.meta().getTables(table.getName()).get(0).fields();
+                        Arrays.stream(fields).forEach(f -> {
                             FieldData fieldData = new FieldData(f.getName());
                             if (primaryKeys.contains(f.getName())) fieldData.setPrimaryKey(true);
                             determineGenerator(sourceConnectionDao, dsl, tableData, f, fieldData);
@@ -94,7 +93,7 @@ public class DistributionModelService {
         for (UniqueKey<?> key : table.getKeys()) {
             if (key.isPrimary()) {
                 for (TableField field : key.getFields()) {
-                    primaryKeys.add(field.getName());
+                    if(field != null) primaryKeys.add(field.getName());
                 }
             }
         }
