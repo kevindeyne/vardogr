@@ -308,6 +308,11 @@ class OrderOfExecutionTest {
                 public Comment getCommentPart() {
                     return null;
                 }
+
+                @Override
+                public @NotNull Name $name() {
+                    return null;
+                }
             };
             foreignKeys.add(key);
         }
@@ -395,6 +400,11 @@ class OrderOfExecutionTest {
         }
 
         @Override
+        public @NotNull Name $name() {
+            return null;
+        }
+
+        @Override
         public String toString() {
             return null;
         }
@@ -446,6 +456,11 @@ class OrderOfExecutionTest {
 
         @Override
         public Comment getCommentPart() {
+            return null;
+        }
+
+        @Override
+        public @NotNull Name $name() {
             return null;
         }
 
@@ -2151,6 +2166,11 @@ class OrderOfExecutionTest {
 
         @Override
         public DataType<ExampleTable> getDataType(Configuration configuration) {
+            return null;
+        }
+
+        @Override
+        public @NotNull DataType<ExampleTable> $dataType() {
             return null;
         }
     }
