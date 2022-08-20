@@ -1,17 +1,18 @@
 package com.kevindeyne.datascrambler.config;
 
-import com.kevindeyne.datascrambler.shell.*;
+import com.kevindeyne.datascrambler.shell.InputReader;
+import com.kevindeyne.datascrambler.shell.ProgressBar;
+import com.kevindeyne.datascrambler.shell.ProgressCounter;
+import com.kevindeyne.datascrambler.shell.ShellHelper;
 import org.jline.reader.History;
 import org.jline.reader.LineReader;
 import org.jline.reader.LineReaderBuilder;
 import org.jline.reader.Parser;
 import org.jline.terminal.Terminal;
-import org.jline.utils.AttributedString;
-import org.jline.utils.AttributedStyle;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.shell.jline.JLineShellAutoConfiguration;
+import org.springframework.shell.boot.CompleterAutoConfiguration;
 
 @Configuration
 public class SpringShellConfig {
@@ -25,7 +26,7 @@ public class SpringShellConfig {
     public InputReader inputReader(
             @Lazy Terminal terminal,
             @Lazy Parser parser,
-            JLineShellAutoConfiguration.CompleterAdapter completer,
+            CompleterAutoConfiguration.CompleterAdapter completer,
             @Lazy History history,
             ShellHelper shellHelper
     ) {

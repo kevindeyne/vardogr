@@ -1,6 +1,7 @@
 package com.kevindeyne.datascrambler.dao;
 
 import com.kevindeyne.datascrambler.domain.distributionmodel.*;
+import com.kevindeyne.datascrambler.domain.distributionmodel.Generator;
 import com.kevindeyne.datascrambler.mapping.DataTypeMapping;
 import com.kevindeyne.datascrambler.service.GenerationHelperService;
 import com.kevindeyne.datascrambler.service.PKDistributionService;
@@ -69,27 +70,25 @@ public class TargetConnectionDao {
 
     public void createTable(DSLContext dsl, TableData table) {
         List<Field<?>> primaryKeys = new ArrayList<>();
-        CreateTableColumnStep createStep = null;
+        CreateTableElementListStep createStep = null;
         final Table<Record> tableRef = table(quotedName(table.getTableName()));
-        try {
-            createStep = dsl.createTable(tableRef); //cannot be a final variable, so no try-resources - manually close
-            for (FieldData fieldData : table.getFieldData()) {
-                final Generator generator = fieldData.getGenerator();
-                DataType<?> dataType = DataTypeMapping.findByKey(generator.getDataTypeKey()).getDataType();
-                dataType = dataType.nullable(generator.isNullable());
-                dataType = dataType.precision((generator.getPrecision() > Short.MAX_VALUE) ? Short.MAX_VALUE : generator.getPrecision());
-                dataType = dataType.length((generator.getLength() > Short.MAX_VALUE) ? Short.MAX_VALUE : generator.getLength());
 
-                final Name fieldName = quotedName(fieldData.getFieldName());
-                final Field<?> field = field(fieldName, dataType);
-                createStep = createStep.column(field);
+        createStep = dsl.createTable(tableRef); //cannot be a final variable, so no try-resources - manually close
+        for (FieldData fieldData : table.getFieldData()) {
+            final Generator generator = fieldData.getGenerator();
+            DataType<?> dataType = DataTypeMapping.findByKey(generator.getDataTypeKey()).getDataType();
+            dataType = dataType.nullable(generator.isNullable());
+            dataType = dataType.precision((generator.getPrecision() > Short.MAX_VALUE) ? Short.MAX_VALUE : generator.getPrecision());
+            dataType = dataType.length((generator.getLength() > Short.MAX_VALUE) ? Short.MAX_VALUE : generator.getLength());
 
-                if (fieldData.isPrimaryKey()) primaryKeys.add(field(fieldName));
-            }
-            createStep.execute();
-        } finally {
-            if (createStep != null) createStep.close();
+            final Name fieldName = quotedName(fieldData.getFieldName());
+            final Field<?> field = field(fieldName, dataType);
+            createStep = createStep.column(field);
+
+            if (fieldData.isPrimaryKey()) primaryKeys.add(field(fieldName));
         }
+        createStep.execute();
+
 
         if (!primaryKeys.isEmpty()) {
             dsl.alterTable(tableRef).add(constraint().primaryKey(primaryKeys.toArray(new Field<?>[0]))).execute();
@@ -107,6 +106,7 @@ public class TargetConnectionDao {
 
     public void validateTable(DSLContext dsl, TableData table) {
         //TODO https://github.com/kevindeyne/vardogr/issues/1
+
     }
 
     public void createIndexes(DSLContext dsl, TableData table) {

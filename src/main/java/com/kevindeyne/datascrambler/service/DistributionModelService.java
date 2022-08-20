@@ -3,6 +3,7 @@ package com.kevindeyne.datascrambler.service;
 import com.kevindeyne.datascrambler.dao.SourceConnectionDao;
 import com.kevindeyne.datascrambler.dao.TargetConnectionDao;
 import com.kevindeyne.datascrambler.domain.distributionmodel.*;
+import com.kevindeyne.datascrambler.domain.distributionmodel.Generator;
 import com.kevindeyne.datascrambler.exceptions.ModelCreationException;
 import com.kevindeyne.datascrambler.helper.ApplyContext;
 import com.kevindeyne.datascrambler.helper.DSLConfiguration;
