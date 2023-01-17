@@ -104,7 +104,7 @@ http://maven.apache.org/xsd/maven-4.0.0.xsd">
 		<dependency>
 			<groupId>org.jooq</groupId>
 			<artifactId>jooq-meta</artifactId>
-			<version>3.17.1</version>
+			<version>3.17.7</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jasypt</groupId>
